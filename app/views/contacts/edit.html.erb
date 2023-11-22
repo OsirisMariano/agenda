@@ -1,10 +1,12 @@
-<h1>Editing contact</h1>
+<div class="row">
+  <div class="col-xs-12">
+    <h1>Editar Contato</h1>
+  </div>
 
-<%= render "form", contact: @contact %>
-
-<br>
-
-<div>
-  <%= link_to "Show this contact", @contact %> |
-  <%= link_to "Back to contacts", contacts_path %>
+  <div class="col-md-6 col-md-offset-3 col-xs-12">
+    <%= form_for @contact do |f| %>
+      <%= render 'form', f: f %>
+      <%= f.submit 'Atualizar', class: 'btn btn-primary' %>
+    <% end %>
+  </div>
 </div>

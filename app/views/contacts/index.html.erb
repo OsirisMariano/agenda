@@ -1,14 +1,44 @@
-<p style="color: green"><%= notice %></p>
-
-<h1>Contacts</h1>
-
-<div id="contacts">
-  <% @contacts.each do |contact| %>
-    <%= render contact %>
-    <p>
-      <%= link_to "Show this contact", contact %>
-    </p>
-  <% end %>
+<div class="row">
+  <div class="col-xs-12 text-center">
+    <h1>Meus contatos</h1>
+  </div>
+  
+  <div class="col-md-8 col-md-offset-2 col-xs-12">
+    <table class="table table-stringed">
+      <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Telefone</th>
+            Açoes
+            <%= link_to 'Novo Contato', new_contact_path, class: 'btn btn-success' %>
+      </tr>
+      </thead>
+      <tbody>
+      <% if @contact.empty? %>
+      <tr>
+        <td colspan="4" class="text-center">
+          <h3>Sem contatos cadastrados</h3>
+          <%= link_to 'click aqui', new_contact_path %> para cadastrar um novo contato
+        </td>
+      </tr>
+        <% end %>
+      <% @contacts.each do |c| %>
+        <tr>
+          <td>
+            <%= c.name %>
+          </td>
+          <td>
+            <%= c.phone %>
+          </td>
+          <td>
+            <%= link_to 'Editar', edit_contact_path(c), class: 'btn btn-warning' %>
+          </td>
+          <td>
+            <%= link_to 'Excluir', contacts_path(c), method: :delete, class: 'btn btn-danger', data: {confirm: 'Tem certeza?'} %>
+          </td>
+        </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
 </div>
-
-<%= link_to "New contact", new_contact_path %>
