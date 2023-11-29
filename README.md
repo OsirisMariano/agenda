@@ -1,6 +1,8 @@
+
+![agenda](https://github.com/OML-Inovacoes-Digitais-LTDA/agenda/assets/38112205/bdd78d2b-d368-43b9-9eb0-ac7ff021aead)
 # Lista de Contatos 
 
-De um up na organização dos seus contatos de forma simples rápida com a Agenda! Este projeto é foi uma oportunidade
+De um up na organização dos seus contatos de forma simples rápida com a Agenda! Este projeto foi uma oportunidade
 para aprender Ruby on Rails e Bootstrap. 
 
 ## Técnologias necessárias:
