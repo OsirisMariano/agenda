@@ -1,14 +1,12 @@
 
 ![agenda](https://github.com/OML-Inovacoes-Digitais-LTDA/agenda/assets/38112205/bdd78d2b-d368-43b9-9eb0-ac7ff021aead)
 # Lista de Contatos 
-
 De um up na organização dos seus contatos de forma simples rápida com a Agenda! Este projeto foi uma oportunidade
 para aprender Ruby on Rails e Bootstrap. 
 
 ## Técnologias necessárias:
-
 - Ruby 3.0.1 ou superior
-- Rails 7
+- Rails 7.1.2
 - Bootstrap 5
 - SQlite
 
