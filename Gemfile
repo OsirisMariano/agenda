@@ -18,15 +18,18 @@ gem "bootsnap", require: false
 
 group :development, :test do
   gem "debug", platforms: %i[ mri mingw x64_mingw ]
+  gem 'rspec', '~> 3.12'
+  gem 'capybara'
+  gem 'shoulda-matchers', '~> 5.0'
+  gem 'rails-controller-testing'
+  gem 'rspec-json_expectations'
 end
 
 group :development do
   gem "web-console"
-
 end
 
 group :test do
-  gem "capybara"
   gem "selenium-webdriver"
   gem "webdrivers"
 end
