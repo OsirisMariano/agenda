@@ -20,6 +20,7 @@ gem 'net-http', require: false
 gem 'net-imap', require: false
 gem 'net-protocol', require: false
 gem 'net-smtp', require: false
+gem 'devise'
 
 group :development, :test do
   gem "debug", platforms: %i[ mri mingw x64_mingw ]

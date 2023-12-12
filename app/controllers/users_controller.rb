@@ -1,6 +1,5 @@
 class UsersController < ApplicationController
-  before_action :require_logged_in_user, only: [:edit, :update]
-
+  
   def new
     @user = User.new
   end
@@ -16,9 +15,8 @@ class UsersController < ApplicationController
   end
 
   private
-    def user_params
-      params.require(:user).permit(:email, :name, :password, :passwod_confirmation)
 
-    end
-
+  def user_params
+    params.require(:user).permit(:name, :email, :password, :password_confirmation)
+  end
 end

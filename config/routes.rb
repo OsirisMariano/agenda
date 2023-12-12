@@ -1,10 +1,16 @@
 Rails.application.routes.draw do
 
   root            to: 'static_pages#index'
+  
+  # Rotas sobre o software
   get 'sobre',    to: 'static_pages#sobre'
   get 'contato',  to: 'static_pages#contato'
 
-  get 'cadastro', to: 'users#new'
+  # Rotas para registro de usuários
+  get 'cadastrar', to: 'users#new'
+  post 'cadastrar', to: 'users#create'
+  
+  # Rotas para sessão (login/logout)
   get 'entrar',   to: 'sessions#new'
   post 'entrar',  to: 'sessions#create'
   delete 'sair',  to: 'sessions#destroy'

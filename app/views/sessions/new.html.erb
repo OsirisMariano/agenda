@@ -1,24 +1,27 @@
-<div class="container">
-  <div class="col-md-6 offset-md-5">
-    <h1>Entrar</h1>
-  </div>
-  <div class="">
-    <%= form_for :session, url: entrar_path, method: :post do |f| %>
-      <div class="form-group">
-        <div class="col-md-6 offset-md-3">
-          <%= f.label :email %>
-          <%= f.email_field :email, placeholder: 'email', class: 'form-control' %>
+<div class="d-flex justify-content-center align-items-center" style="min-height: 90vh;">
+  <div class="container">
+    <div class="col-md-6 offset-md-5">
+      <h1>Login</h1>
+    </div>
+    <div class="">
+      <%= form_for :session, url: entrar_path, method: :post, url: new_session_path do |f| %>
+        <div class="form-group">
+          <div class="col-md-6 offset-md-3">
+            <!--<%= f.label :email %>-->
+            <%= f.email_field :email, placeholder: 'Seu E-mail', class: 'form-control' %>
+          </div>
         </div>
-      </div>
-      <br>
-      <div class="form-group">
-        <div class="col-md-6 offset-md-3">
-          <%= f.label :password %>
-          <%= f.password_field :password, placeholder: 'Senha', class: 'form-control' %>
-          <br>
-          <%= f.submit 'Entrar', class: 'btn btn-primary' %>
+        <br>
+        <div class="form-group">
+          <div class="col-md-6 offset-md-3">
+            <!--<%= f.label :password %>-->
+            <%= f.password_field :password, placeholder: 'Senha', class: 'form-control' %>
+            <br>
+            <%= link_to 'Login', new_session_path, class: 'btn btn-primary' %>
+            <%= link_to  'Cadastar', new_user_path, class: 'btn btn-primary'%>
+          </div>
         </div>
-      </div>
-    <% end %>
+      <% end %>
+    </div>
   </div>
 </div>
