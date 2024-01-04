@@ -24,7 +24,7 @@ para aprender Ruby on Rails e Bootstrap.
 
 ### Clone em sua máquina
 ~~~
-git clone https://github.com/OML-Inovacoes-Digitais-LTDA/agenda
+git clone https://github.com/OsirisMariano/agenda
 ~~~
 
 ### Instale as dependências
