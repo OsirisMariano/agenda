@@ -1,15 +1,69 @@
-<div class="col-md-5 offset-md-3">
-  <footer>
-    <nav>
-      <small>
-        <li><%= link_to 'Todos os direitos reservados',  root_path %></li>
-        <li>
-          <%= link_to 'Sobre', sobre_path %>
+<footer class="py-5 bg-light">
+  <div class="container">
+    <div class="row">
+      <div class="col-6 col-md-2 mb-3">
+        <h5 class="text-body-secondary mb-2">Navegação</h5>
+        <div class="d-flex flex-column gap-2">
+          <%= link_to 'Home', root_path, class: 'text-muted text-decoration-none' %>
+          <%= link_to 'Contatos', contacts_path, class: 'text-muted text-decoration-none' %>
+          <%= link_to 'Sobre', sobre_path, class: 'text-muted text-decoration-none' %>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2 mb-3">
+        <h5 class="text-body-secondary mb-2">Conta</h5>
+        <div class="d-flex flex-column gap-2">
+          <% if user_signed_in? %>
+            <%= link_to 'Meus Contatos', contacts_path, class: 'text-muted text-decoration-none' %>
+            <%= button_to 'Sair', sair_path, method: :delete, class: 'text-muted text-decoration-none btn btn-link p-0 text-start' %>
+          <% else %>
+            <%= link_to 'Entrar', entrar_path, class: 'text-muted text-decoration-none' %>
+            <%= link_to 'Cadastrar', cadastro_path, class: 'text-muted text-decoration-none' %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-2 mb-3">
+        <h5 class="text-body-secondary mb-2">Recursos</h5>
+        <div class="d-flex flex-column gap-2">
+          <%= link_to 'Novo Contato', new_contact_path, class: 'text-muted text-decoration-none' %>
+          <a href="#" class="text-muted text-decoration-none">Ajuda</a>
+          <a href="#" class="text-muted text-decoration-none">Privacidade</a>
+        </div>
+      </div>
+
+      <div class="col-md-5 offset-md-1 mb-3">
+        <form>
+          <h5 class="text-body-secondary mb-2">Assine nossa newsletter</h5>
+          <p class="text-muted small mb-3">Receba novidades sobre o Agenda.</p>
+          <div class="d-flex flex-column flex-sm-row w-100 gap-2">
+            <label for="newsletter1" class="visually-hidden">Endereço de e-mail</label>
+            <input id="newsletter1" type="email" class="form-control" placeholder="Seu e-mail">
+            <button class="btn btn-primary" type="button">Inscrever-se</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between py-4 border-top">
+      <p class="mb-0 text-muted">&copy; <%= Date.today.year %> Agenda. Todos os direitos reservados.</p>
+      <ul class="list-unstyled d-flex mb-0">
+        <li class="ms-3">
+          <a href="#" class="link-body-emphasis" aria-label="Instagram">
+            <i class="bi bi-instagram fs-5"></i>
+          </a>
         </li>
-        <li>
-          <%= link_to 'Contato', contato_path %>
+        <li class="ms-3">
+          <a href="#" class="link-body-emphasis" aria-label="Twitter">
+            <i class="bi bi-twitter-x fs-5"></i>
+          </a>
         </li>
-      </small>
-    </nav>
-  </footer>
-</div>
+        <li class="ms-3">
+          <a href="#" class="link-body-emphasis" aria-label="GitHub">
+            <i class="bi bi-github fs-5"></i>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>

@@ -1,71 +1,54 @@
 class ContactsController < ApplicationController
   before_action :require_logged_in_user
-  before_action :set_contact, only: %i[ show edit update destroy ]
+  before_action :set_contact, only: [:edit, :update, :destroy]
 
-  # GET /contacts or /contacts.json
   def index
     @contacts = current_user.contacts
+    @contacts = @contacts.search(params[:q]) if params[:q].present?
+    
+    if params[:sort].in?(%w[name created_at])
+      @contacts = @contacts.order(params[:sort] => :asc)
+    else
+      @contacts = @contacts.order(:name => :asc)
+    end
   end
 
-  # GET /contacts/1 or /contacts/1.json
-  def show
-  end
-
-  # GET /contacts/new
   def new
     @contact = Contact.new
   end
 
-  # GET /contacts/1/edit
-  def edit
-  end
+  def edit; end
 
-  # POST /contacts or /contacts.json
   def create
     @contact = current_user.contacts.build(contact_params)
 
-    respond_to do |format|
-      if @contact.save
-        format.html { redirect_to contact_url(@contact), notice: "Contact was successfully created." }
-        format.json { render :show, status: :created, location: @contact }
-      else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @contact.errors, status: :unprocessable_entity }
-      end
+    if @contact.save
+      redirect_to contacts_path, notice: "Contato criado com sucesso!"
+    else
+      render :new, status: :unprocessable_entity
     end
   end
 
-  # PATCH/PUT /contacts/1 or /contacts/1.json
   def update
-    respond_to do |format|
-      if @contact.update(contact_params)
-        format.html { redirect_to contact_url(@contact), notice: "Contact was successfully updated." }
-        format.json { render :show, status: :ok, location: @contact }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @contact.errors, status: :unprocessable_entity }
-      end
+    if @contact.update(contact_params)
+      redirect_to contacts_path, notice: "Contato atualizado com sucesso!"
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
-  # DELETE /contacts/1 or /contacts/1.json
   def destroy
     @contact.destroy
-
-    respond_to do |format|
-      format.html { redirect_to contacts_url, notice: "Contact was successfully destroyed." }
-      format.json { head :no_content }
-    end
+    redirect_to contacts_path, notice: "Contato excluído com sucesso!"
   end
 
   private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_contact
-      @contact = current_user.contacts.find(params[:id])
-    end
 
-    # Only allow a list of trusted parameters through.
-    def contact_params
-      params.require(:contact).permit(:name, :phone)
-    end
+  def set_contact
+    @contact = current_user.contacts.find(params[:id])
+  end
+
+  def contact_params
+    params.require(:contact).permit(:name, :phone)
+  end
 end

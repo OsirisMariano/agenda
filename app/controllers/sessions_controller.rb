@@ -1,24 +1,20 @@
 class SessionsController < ApplicationController
   def new
-    redirect_to users_path(current_user) if user_signed_in?
-
   end
 
   def create
-    user = User.find_by(email: params[:session][:email].downcase)
-    
-    if user&.authenticate(params[:session][:password])
+    user = User.find_by(email: params[:email])
+    if user&.authenticate(params[:password])
       sign_in(user)
-      redirect_to user_path(user), notice: 'Login bem-sucedido!'
+      redirect_to root_path, notice: "Login realizado com sucesso!"
     else
-      flash.now[:danger] = 'Email ou senha invalidos'
-      render 'new'
+      flash[:alert] = "E-mail ou senha inválidos"
+      render :new
     end
   end
 
   def destroy
     sign_out
-    flash[:sucess] = "Logout com sucesso"
-    redirect_to entrar_path
+    redirect_to root_path, notice: "Logout realizado com sucesso!"
   end
 end
