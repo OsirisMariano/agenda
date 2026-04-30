@@ -1,0 +1,51 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container">
+    <%= link_to 'Agenda', root_url, class: 'navbar-brand fw-bold' %>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <% if user_signed_in? %>
+          <li class="nav-item">
+            <%= link_to 'Contatos', contacts_path, class: 'nav-link' %>
+          </li>
+          <li class="nav-item">
+            <%= link_to 'Cadastro', new_contact_path, class: 'nav-link' %>
+          </li>
+        <% end %>
+        <li class="nav-item">
+          <%= link_to 'Sobre', sobre_path, class: 'nav-link' %>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav">
+        <% if !user_signed_in? %>
+          <li class="nav-item">
+            <%= link_to 'Entrar', entrar_path, class: 'nav-link' %>
+          </li>
+          <li class="nav-item">
+            <%= link_to 'Cadastrar', cadastro_path, class: 'nav-link' %>
+          </li>
+        <% else %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="bi bi-person-circle"></i> <%= current_user.name %>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <%= link_to 'Contatos', contacts_path, class: 'dropdown-item' %>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <%= link_to 'Sair', sair_path, class: 'dropdown-item text-danger' %>
+              </li>
+            </ul>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,17 +1,20 @@
+# frozen_string_literal: true
+
 Rails.application.routes.draw do
+  get 'sessions/new'
+  get "users/new"
+  root to: "static_pages#index"
 
-  root            to: 'static_pages#index'
-  get 'sobre',    to: 'static_pages#sobre'
-  get 'contato',  to: 'static_pages#contato'
+  # Rotas sobre o software
+  get "sobre",    to: "static_pages#sobre"
 
-  get 'cadastro', to: 'users#new'
-  get 'entrar',   to: 'sessions#new'
-  post 'entrar',  to: 'sessions#create'
-  delete 'sair',  to: 'sessions#destroy'
+  get "entrar", to: "sessions#new", as: "entrar"
+  post "entrar", to: "sessions#create"
+  get "sair", to: "sessions#destroy", as: "sair"
+  delete "sair", to: "sessions#destroy"
+  get "cadastro", to: "users#new", as: "cadastro"
+  get "usuarios", to: "users#index"
 
-  resources :users, only: [:show, :new, :create, :edit, :update] do
-    resources :contacts, only: [:index, :new, :create, :edit, :update, :destroy]
-  end
-  resources :sessions, only: [:new, :create, :destroy]
-
+  resources :contacts, only: [:index, :new, :create, :edit, :update, :destroy]
+  resources :users, only: [:index, :create]
 end

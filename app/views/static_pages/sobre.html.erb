@@ -1,6 +1,56 @@
-<h1>Sobre</h1>
-<p>
-  Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ad aliquam amet aperiam,
-  at atque autem eligendi esse, fugiat hic illum laborum nemo nostrum odio, quae
-  quaerat ratione ullam? Earum, fugit.
-</p>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0"><i class="bi bi-info-circle me-2"></i>Sobre o Agenda</h3>
+        </div>
+        <div class="card-body">
+          <h4 class="card-title">O que é o Agenda?</h4>
+          <p class="card-text">
+            O Agenda é uma aplicação simples e eficiente para gerenciamento de contatos pessoais. 
+            Desenvolvido com Ruby on Rails e Bootstrap 5, oferece uma experiência intuitiva e responsiva.
+          </p>
+
+          <hr class="my-4">
+
+          <h4 class="card-title">Funcionalidades</h4>
+          <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item">
+              <i class="bi bi-check-circle text-success me-2"></i>
+              Cadastro e autenticação de usuários
+            </li>
+            <li class="list-group-item">
+              <i class="bi bi-check-circle text-success me-2"></i>
+              Gerenciamento completo de contatos (CRUD)
+            </li>
+            <li class="list-group-item">
+              <i class="bi bi-check-circle text-success me-2"></i>
+              Interface responsiva para mobile e desktop
+            </li>
+            <li class="list-group-item">
+              <i class="bi bi-check-circle text-success me-2"></i>
+              Privacidade: cada usuário vê apenas seus próprios contatos
+            </li>
+          </ul>
+
+          <hr class="my-4">
+
+          <h4 class="card-title">Tecnologias</h4>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge bg-primary">Ruby on Rails 7</span>
+            <span class="badge bg-info">Bootstrap 5</span>
+            <span class="badge bg-secondary">SQLite</span>
+            <span class="badge bg-warning text-dark">HTML/CSS/JS</span>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="text-center">
+            <%= link_to 'Voltar para Home', root_path, class: 'btn btn-outline-primary' %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
