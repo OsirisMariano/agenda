@@ -4,13 +4,13 @@
 De um up na organização dos seus contatos de forma simples rápida com a Agenda! Este projeto foi uma oportunidade
 para aprender Ruby on Rails e Bootstrap. 
 
-## Técnologias necessárias:
+### Técnologias necessárias:
 - Ruby 3.0.1 ou superior
 - Rails 7.1.2
 - Bootstrap 5
 - SQlite
 
-## Funcionalidades
+### Funcionalidades
 
 - Cadastro de usuários
 - Recuperação de senha via e-mail
@@ -18,7 +18,7 @@ para aprender Ruby on Rails e Bootstrap.
 - Gerenciamento de contatos pessoais
 - Customização de perfil
 
-## Para executar o proejto:
+### Para executar o proejto:
 
 - Siga o passo a passo
 

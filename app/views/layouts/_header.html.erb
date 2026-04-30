@@ -1,49 +1,49 @@
-<nav class="navbar navbar-inverse navbar-static-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container">
+    <%= link_to 'Agenda', root_url, class: 'navbar-brand fw-bold' %>
 
-  <div class="container-fluid">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#expanded-menu" aria-expanded=" false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <%= link_to 'Contact List', root_url, class: 'navbar-brand' %>
-    </div>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-    <!-- Conteudo exibido em telas maiores e que serao escondidos em telas menores -->
-    <div class="collapse navbar-collapse" id="expanded-menu">
-      <ul class="nav navbar-nav">
-        <% if !user_signed_in? %>
-          <li class="active">
-            <%= link_to 'Nova Conta', new_user_path %>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <% if user_signed_in? %>
+          <li class="nav-item">
+            <%= link_to 'Contatos', contacts_path, class: 'nav-link' %>
+          </li>
+          <li class="nav-item">
+            <%= link_to 'Cadastro', new_contact_path, class: 'nav-link' %>
           </li>
         <% end %>
+        <li class="nav-item">
+          <%= link_to 'Sobre', sobre_path, class: 'nav-link' %>
+        </li>
       </ul>
 
-      <ul class="nav navbar-nav navbar-right">
+      <ul class="navbar-nav">
         <% if !user_signed_in? %>
-          <li>
-            <%= link_to 'Entrar', entrar_path %>
+          <li class="nav-item">
+            <%= link_to 'Entrar', entrar_path, class: 'nav-link' %>
           </li>
-          <% else %>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="">
-            bem vindo, <%= current_user.name %><span class="caret"></span>
-          </a>
-          <ul class="dropdown-menu">
-            <li>
-              <%= link_to 'Minha Pagina', contacts_path %>
-            </li>
-            <li>
-              <%= link_to 'Editar', edit_user_path(current_user) %>
-            </li>
-            <li class="divider" role="separator"></li>
-            <li>
-              <%= link_to 'Sair', sair_path, method: :delete %>
-            </li>
-          </ul>
-        </li>
+          <li class="nav-item">
+            <%= link_to 'Cadastrar', cadastro_path, class: 'nav-link' %>
+          </li>
+        <% else %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="bi bi-person-circle"></i> <%= current_user.name %>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <%= link_to 'Contatos', contacts_path, class: 'dropdown-item' %>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <%= link_to 'Sair', sair_path, class: 'dropdown-item text-danger' %>
+              </li>
+            </ul>
+          </li>
         <% end %>
       </ul>
     </div>

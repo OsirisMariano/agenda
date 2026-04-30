@@ -1,5 +1,60 @@
-<div class="jumbotron">
-  <h1>Lista de Contatos</h1>
-  <p>Gerenie seus contatos em qualquer lugar!</p>
-  <p><%=  link_to 'Crie Sua Conta', new_user_path, class: 'btn btn-primary btn-lg' %></p>
+<div class="bg-light py-5">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <h1 class="display-4 fw-bold text-primary">Gestão de Contatos</h1>
+        <p class="lead text-muted">Organize seus contatos de forma simples, rápida e segura. Nunca mais perca um número importante.</p>
+        <div class="mt-4">
+          <% if user_signed_in? %>
+            <%= link_to 'Ver Meus Contatos', contacts_path, class: 'btn btn-primary btn-lg me-2' %>
+            <%= link_to 'Adicionar Novo', new_contact_path, class: 'btn btn-outline-primary btn-lg' %>
+          <% else %>
+            <%= link_to 'Cadastre-se Grátis', cadastro_path, class: 'btn btn-primary btn-lg me-2' %>
+            <%= link_to 'Entrar', entrar_path, class: 'btn btn-outline-primary btn-lg' %>
+          <% end %>
+        </div>
+      </div>
+      <div class="col-lg-5 text-center">
+        <i class="bi bi-people-fill display-1 text-primary opacity-25"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container my-5">
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <i class="bi bi-shield-check text-primary fs-1"></i>
+          </div>
+          <h5 class="card-title">Seguro</h5>
+          <p class="card-text text-muted">Seus contatos são privados e protegidos. Apenas você tem acesso.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <i class="bi bi-lightning text-primary fs-1"></i>
+          </div>
+          <h5 class="card-title">Rápido</h5>
+          <p class="card-text text-muted">Interface simples e intuitiva. Adicione contatos em segundos.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="mb-3">
+            <i class="bi bi-cloud text-primary fs-1"></i>
+          </div>
+          <h5 class="card-title">Acessível</h5>
+          <p class="card-text text-muted">Acesse de qualquer lugar, a qualquer momento.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
