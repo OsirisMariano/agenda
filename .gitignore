@@ -36,3 +36,5 @@
 .idea
 .vscode
 .env
+core
+views
