@@ -3,9 +3,10 @@
 puts 'Criando seed de dados...'
 
 user = User.find_or_create_by!(email: 'teste@exemplo.com') do |u|
-  u.name = 'Usuário Teste'
+  u.name = 'Adminstrador'
   u.password = '123456'
   u.password_confirmation = '123456'
+  u.admin = true
 end
 
 puts "Usuário criado: #{user.email}"
