@@ -8,6 +8,6 @@ class User < ApplicationRecord
   validates :password_confirmation, presence: true, if: -> { password.present? }
 
   def admin?
-    email == "admin@agenda.com"
+    admin
   end
 end
