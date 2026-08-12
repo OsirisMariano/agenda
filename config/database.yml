@@ -35,13 +35,12 @@ default: &default
   port: <%= ENV['POSTGRES_PORT'] %>
 development:
   <<: *default
-  database: agenda-db-1
+  database: agenda_development
 
 test:
   <<: *default
-  database: agenda-db-1
+  database: agenda_test
 
 production:
   <<: *default
-  database: agenda-db-1
-  username: agenda-db-1
+  database: agenda_production

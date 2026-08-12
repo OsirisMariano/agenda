@@ -1,10 +1,20 @@
-FROM ghcr.io/anomalyco/opencode:latest
+FROM ruby:3.3.0-slim
 
-# Como a imagem original usa Alpine, mudamos para o root para instalar a compatibilidade
-USER root
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    libyaml-dev \
+    nodejs \
+    tzdata \
+  && rm -rf /var/lib/apt/lists/*
 
-# Instala o libc6-compat que resolve o problema do TUI e do linkador dinâmico
-RUN apk add --no-cache libc6-compat gcompat
+WORKDIR /app
 
-# Devolve a execução para o comando padrão do opencode
-ENTRYPOINT ["opencode"]
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
