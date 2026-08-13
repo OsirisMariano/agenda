@@ -15,6 +15,7 @@ gem "net-http", require: false
 gem "net-imap", require: false
 gem "net-protocol", require: false
 gem "net-smtp", require: false
+gem "pagy", "~> 9.0"
 gem "pg", "~> 1.1"
 gem "puma", "~> 5.0"
 gem "rails", "~> 7.0.5", ">= 7.0.5.1"

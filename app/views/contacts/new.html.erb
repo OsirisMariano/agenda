@@ -8,18 +8,18 @@
         <div class="card-body">
           <%= form_for @contact do |f| %>
             <div class="mb-3">
-              <%= f.label :name, class: 'form-label' %>
+              <%= f.label :name, "Nome", class: 'form-label' %>
               <%= f.text_field :name, class: form_field_class(f, :name), placeholder: 'Nome completo' %>
               <%= form_field_error(f, :name) %>
             </div>
             <div class="mb-3">
-              <%= f.label :phone, class: 'form-label' %>
+              <%= f.label :phone, "Telefone", class: 'form-label' %>
               <%= f.text_field :phone, class: form_field_class(f, :phone), placeholder: '(00) 00000-0000' %>
               <%= form_field_error(f, :phone) %>
             </div>
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
               <%= link_to 'Cancelar', contacts_path, class: 'btn btn-outline-secondary' %>
-              <%= f.submit 'Salvar', class: 'btn btn-primary' %>
+              <%= f.submit 'Criar Contato', class: 'btn btn-primary' %>
             </div>
           <% end %>
         </div>
