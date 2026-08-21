@@ -4,3 +4,13 @@ require:
   - rubocop-rails
 AllCops:
   TargetRubyVersion: 3.3.0
+
+# Migracoes historicas: nao reescrever semantica (bulk changes alteraria o DDL)
+Rails/BulkChangeTable:
+  Exclude:
+    - "db/migrate/**/*"
+
+# Seeds: puts e intencional para feedback no terminal
+Rails/Output:
+  Exclude:
+    - "db/seeds.rb"

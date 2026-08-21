@@ -5,7 +5,7 @@ class CreateContacts < ActiveRecord::Migration[7.0]
     create_table(:contacts) do |t|
       t.string(:name)
       t.string(:phone)
-      t.references :user, foreign_key: true
+      t.references(:user, foreign_key: true)
 
       t.timestamps
     end

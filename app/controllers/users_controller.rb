@@ -15,9 +15,9 @@ class UsersController < ApplicationController
     @user = User.new(user_params)
     if @user.save
       sign_in(@user)
-      redirect_to root_path, notice: "Usuário cadastrado com sucesso!"
+      redirect_to(root_path, notice: "Usuário cadastrado com sucesso!")
     else
-      render :new, status: :unprocessable_entity
+      render(:new, status: :unprocessable_entity)
     end
   end
 
