@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.2  
+**Versão:** 0.3  
 **Data:** Agosto 2026  
-**Status:** Lançamento Inicial (v0.2 - Alinhamento com o código)
+**Status:** Lançamento Inicial (v0.3 - Melhorias: paginação, validações e testes)
 
 ---
 
@@ -36,6 +36,7 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 | **Asset Pipeline** | Importmap + Sprockets | - |
 | **Autenticação** | Custom (has_secure_password + bcrypt) | bcrypt 3.1.20 |
 | **Testes** | RSpec + Capybara | rspec-rails 7.1.1 |
+| **Paginação** | Pagy | 9.4.0 |
 | **Servidor** | Puma | 5.6.9 |
 | **Deploy** | Docker Compose | - |
 
@@ -84,8 +85,9 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 - **Processamento:** `POST /entrar` → `sessions#create`
 - **Logout:** `GET|DELETE /sair` → `sessions#destroy`
 - **Armazenamento:** Session cookie (`session[:user_id]`)
-- **Método `sign_in(user)`:** Define session
-- **Método `current_user`:** Recupera usuário da session
+- **Método `sign_in(user, remember_me:)`:** Define session ou cookie "Lembrar-me"
+- **Método `current_user`:** Recupera usuário da session ou do cookie
+- **"Lembrar-me":** Cookie assinado `cookies.signed[:user_id]` com expiração de **2 semanas** (`REMEMBER_ME_EXPIRATION`), removido no logout
 
 #### Admin
 - Coluna `admin` (boolean, default `false`) no banco de dados
@@ -99,16 +101,18 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 - **Rota:** `GET /contacts` → `contacts#index`
 - **Funcionalidades:**
   - Lista apenas contatos do usuário logado
-  - **Busca:** Por nome ou telefone (scope `search`)
+  - **Busca:** Por nome ou telefone (scope `search`, case-insensitive com `ILIKE`)
   - **Ordenação:** Por nome (A-Z) ou data de criação (padrão: nome)
-  - Contador de contatos com badge
+  - **Paginação:** 12 contatos por página (Pagy, overflow para última página)
+  - Contador de contatos com badge (total de todos os contatos)
 
 #### Criação de Contato
 - **Rota:** `GET /contacts/new` → `contacts#new`
 - **Campos:** Nome, Telefone
 - **Validações:**
   - Nome: obrigatório, máximo 50 caracteres
-  - Telefone: obrigatório
+  - Telefone: obrigatório, formato brasileiro `(XX) XXXXX-XXXX` (com DDD e código de país opcionais), único por usuário
+  - Índice único em `(user_id, phone)` e em `users.email` no banco de dados
 
 #### Edição de Contato
 - **Rota:** `GET /contacts/:id/edit` → `contacts#edit`
@@ -165,12 +169,17 @@ end
 #### Contact (`app/models/contact.rb`)
 ```ruby
 class Contact < ApplicationRecord
-  validates :name, presence: true, length: { maximum: 50 }
-  validates :phone, presence: true
+  PHONE_REGEX = /\A(\+\d{1,3}[-\s.]?)?\(?\d{2}\)?[-\s.]?\d{4,5}[-\s.]?\d{4}\z/
+
   belongs_to :user
-  
-  scope :search, ->(query) { 
-    where("name LIKE :q OR phone LIKE :q", q: "%#{query}%") 
+
+  validates :name, presence: true, length: { maximum: 50 }
+  validates :phone, presence: true,
+                    format: { with: PHONE_REGEX, message: "inválido. Use o formato (XX) XXXXX-XXXX." },
+                    uniqueness: { scope: :user_id }
+
+  scope :search, ->(query) {
+    where("name ILIKE :q OR phone ILIKE :q", q: "%#{query}%")
   }
 end
 ```
@@ -228,7 +237,7 @@ end
 - Estado vazio: mensagem motivacional + CTA
 
 #### Formulários
-- **Login:** E-mail, senha, checkbox "Lembrar-me" (funcional via `cookies.signed.permanent`)
+- **Login:** E-mail, senha, checkbox "Lembrar-me" (cookie assinado com expiração de 2 semanas)
 - **Cadastro:** Nome, e-mail, senha, confirmação com validações visuais
 - **Contato:** Nome e telefone com feedback de erros
 
@@ -240,7 +249,7 @@ end
 - Customizada sem Devise (has_secure_password + bcrypt)
 - Senhas hasheadas com bcrypt
 - Session-based (não JWT)
-- "Lembrar-me" opcional via `cookies.signed.permanent[:user_id]` (setado no login e removido no logout)
+- "Lembrar-me" opcional via `cookies.signed[:user_id]` com expiração de 2 semanas (setado no login e removido no logout)
 - Métodos auxiliares em `SessionsHelper`
 
 ### 8.2 Autorização
@@ -294,11 +303,17 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers
-- **Testes de model:** `user_spec.rb` (pendente)
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **51 exemplos, 0 falhas**
+- **Testes de model:**
+  - `user_spec.rb` (associações, validações, `admin?`)
+  - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca)
 - **Testes de controller:**
-  - `users_controller_spec.rb`
-  - `sessions_controller_spec.rb`
+  - `users_controller_spec.rb` (cadastro, autorização de admin)
+  - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
+  - `contacts_controller_spec.rb` (CRUD, paginação, busca, isolamento por usuário)
+- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me")
+- **Testes de feature:** `authentication_spec.rb` (cadastro → login → sair, com `rack_test`)
+- **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
 
@@ -334,17 +349,19 @@ O arquivo `db/seeds.rb` cria:
 
 ### 12.3 Problemas no Repositório
 - ✅ **Arquivo `core`:** Removido do repositório (não mais presente) — **resolvido em v0.2**
-- **Arquivo `views`:** 1500 bytes no root (saída acidental do `rails generate devise`)
+- ✅ **Arquivo `views`:** Removido do repositório (saída acidental do `rails generate devise`) — **resolvido em v0.3**
+- ✅ **Arquivo `test_hook.rb`:** Removido do repositório (resquício de configuração) — **resolvido em v0.3**
 - **Traduções Devise:** `devise.en.yml` existe mas Devise não está em uso
 
 ### 12.4 Melhorias Sugeridas
 - Implementar password reset real
-- Adicionar paginação na listagem de contatos
+- ✅ Adicionar paginação na listagem de contatos (Pagy, 12/página) — **concluído em v0.3**
 - Adicionar campos adicionais (e-mail, endereço) aos contatos
 - Implementar busca full-text
-- Adicionar testes model completos
+- ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
-- Remover arquivos desnecessários do repositório
+- ✅ Remover arquivos desnecessários do repositório (`views`, `test_hook.rb`) — **concluído em v0.3**
+- Rodar rubocop no código legado (migrations antigas com offenses pré-existentes)
 
 ---
 
@@ -369,6 +386,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 |--------|------|-----------|
 | 0.1 | Abr 2026 | Documentação inicial do lançamento |
 | 0.2 | Ago 2026 | Alinhamento com o código atual: admin por coluna no banco, "Lembrar-me" funcional, Turbo via importmap, Ruby 3.3.0, Capybara/Selenium configurados, **upgrade rspec-rails 3.9.1 → 7.1.1** (corrige incompatibilidade com Rails 7.0.8), README atualizado |
+| 0.3 | Ago 2026 | Melhorias: **paginação com Pagy** (12/página), **validações de contato** (formato brasileiro de telefone + unicidade por usuário + índices únicos no banco), **"Lembrar-me" com expiração de 2 semanas**, **specs expandidos** (models, controllers, requests, features — 51 exemplos), correção do **label/input do form de login** (ids conflitantes), remoção de arquivos residuais (`views`, `test_hook.rb`) |
 
 ---
 

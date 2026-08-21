@@ -11,17 +11,17 @@
           <%= form_with url: entrar_path, local: true do |form| %>
             <div class="mb-3">
               <%= form.label :email, "E-mail", class: 'form-label' %>
-              <%= form.email_field :email, class: 'form-control', id: 'floatingInput', placeholder: 'name@example.com' %>
+              <%= form.email_field :email, class: 'form-control', placeholder: 'name@example.com' %>
             </div>
 
             <div class="mb-3">
               <%= form.label :password, "Senha", class: 'form-label' %>
-              <%= form.password_field :password, class: 'form-control', id: 'floatingPassword', placeholder: 'Senha' %>
+              <%= form.password_field :password, class: 'form-control', placeholder: 'Senha' %>
             </div>
 
             <div class="form-check mb-3">
-              <%= form.check_box :remember_me, class: 'form-check-input', id: 'flexCheckDefault' %>
-              <%= form.label :remember_me, "Lembrar-me", class: 'form-check-label', for: 'flexCheckDefault' %>
+              <%= form.check_box :remember_me, class: 'form-check-input' %>
+              <%= form.label :remember_me, "Lembrar-me", class: 'form-check-label' %>
             </div>
 
             <%= form.submit "Entrar", class: 'btn btn-primary w-100 py-2' %>

@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 module SessionsHelper
+  REMEMBER_ME_EXPIRATION = 2.weeks
+
   def sign_in(user, remember_me: false)
     if remember_me
-      cookies.signed.permanent[:user_id] = user.id
+      cookies.signed[:user_id] = { value: user.id, expires: REMEMBER_ME_EXPIRATION.from_now }
     else
       session[:user_id] = user.id
     end
