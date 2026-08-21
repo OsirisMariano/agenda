@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.1  
-**Data:** Abril 2026  
-**Status:** Lançamento Inicial
+**Versão:** 0.2  
+**Data:** Agosto 2026  
+**Status:** Lançamento Inicial (v0.2 - Alinhamento com o código)
 
 ---
 
@@ -35,7 +35,7 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 | **Database** | PostgreSQL | 12.3 (Docker) |
 | **Asset Pipeline** | Importmap + Sprockets | - |
 | **Autenticação** | Custom (has_secure_password + bcrypt) | bcrypt 3.1.20 |
-| **Testes** | RSpec + Capybara | rspec-rails 3.9.1 |
+| **Testes** | RSpec + Capybara | rspec-rails 7.1.1 |
 | **Servidor** | Puma | 5.6.9 |
 | **Deploy** | Docker Compose | - |
 
@@ -88,8 +88,10 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 - **Método `current_user`:** Recupera usuário da session
 
 #### Admin
-- Verificação simples: `user.admin?` retorna `true` se e-mail for `admin@agenda.com`
-- Admin pode acessar listagem de usuários (`GET /usuarios`)
+- Coluna `admin` (boolean, default `false`) no banco de dados
+- `user.admin?` retorna o valor da coluna `admin`
+- Apenas usuários com `admin = true` acessam a listagem de usuários (`GET /usuarios`)
+- Seed define o usuário `teste@exemplo.com` como admin
 
 ### 4.2 Gestão de Contatos (CRUD)
 
@@ -134,9 +136,10 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 │ name            │◄──────────│ name            │
 │ email           │           │ phone           │
 │ password_digest │           │ user_id (FK)    │
-│ created_at      │           │ created_at      │
-│ updated_at      │           │ updated_at      │
-└─────────────────┘           └─────────────────┘
+│ admin (bool)    │           │ created_at      │
+│ created_at      │           │ updated_at      │
+│ updated_at      │           └─────────────────┘
+└─────────────────┘
 ```
 
 ### 5.2 Detalhes dos Modelos
@@ -151,9 +154,10 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: { case_sensitive: false }, 
             format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :password, length: { minimum: 6 }, if: -> { password.present? }
+  validates :password_confirmation, presence: true, if: -> { password.present? }
   
   def admin?
-    email == "admin@agenda.com"
+    admin
   end
 end
 ```
@@ -224,7 +228,7 @@ end
 - Estado vazio: mensagem motivacional + CTA
 
 #### Formulários
-- **Login:** E-mail, senha, checkbox "Lembrar-me"
+- **Login:** E-mail, senha, checkbox "Lembrar-me" (funcional via `cookies.signed.permanent`)
 - **Cadastro:** Nome, e-mail, senha, confirmação com validações visuais
 - **Contato:** Nome e telefone com feedback de erros
 
@@ -236,6 +240,7 @@ end
 - Customizada sem Devise (has_secure_password + bcrypt)
 - Senhas hasheadas com bcrypt
 - Session-based (não JWT)
+- "Lembrar-me" opcional via `cookies.signed.permanent[:user_id]` (setado no login e removido no logout)
 - Métodos auxiliares em `SessionsHelper`
 
 ### 8.2 Autorização
@@ -289,13 +294,13 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** com shoulda-matchers
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers
 - **Testes de model:** `user_spec.rb` (pendente)
 - **Testes de controller:**
   - `users_controller_spec.rb`
   - `sessions_controller_spec.rb`
-- **Capybara** para testes de integração
-- **Selenium WebDriver** para testes browser
+- **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
+- **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
 
 ### 10.2 Comandos de Teste
 ```bash
@@ -309,7 +314,7 @@ bundle exec rspec spec/controllers/  # Testes de controller
 ## 11. Seed de Dados
 
 O arquivo `db/seeds.rb` cria:
-- **1 usuário de teste:** `teste@exemplo.com` / senha `123456`
+- **1 usuário de teste:** `teste@exemplo.com` / senha `123456` (marcado como **admin**: `admin = true`)
 - **50 contatos** com nomes e telefones variados para o usuário de teste
 
 ---
@@ -317,10 +322,10 @@ O arquivo `db/seeds.rb` cria:
 ## 12. Problemas Identificados e Débito Técnico
 
 ### 12.1 Inconsistências
-1. **Ruby Version:** `.ruby-version` diz 2.7.7, mas Gemfile usa 3.3.0
-2. **Rails Version:** README cita 7.1.2, mas projeto usa 7.0.8.6
-3. **Database:** README cita SQLite, mas configuração atual é PostgreSQL
-4. **Turbo CDN:** Typo "strurbo-rails" em `application.html.erb` (linha 11)
+- ✅ **Ruby Version:** `.ruby-version` alinhado para 3.3.0 (era 2.7.7 vs Gemfile 3.3.0) — **resolvido em v0.2**
+- ✅ **Rails Version:** README atualizado para 7.0.8.6 (citava 7.1.2) — **resolvido em v0.2**
+- ✅ **Database:** README atualizado para PostgreSQL (citava SQLite) — **resolvido em v0.2**
+- ✅ **Turbo CDN:** Linha CDN `strurbo-rails` removida (Turbo já carregado via importmap) — **resolvido em v0.2**
 
 ### 12.2 Funcionalidades Incompletas
 1. **Recuperação de senha:** Citada no README mas não implementada (Devise comentado)
@@ -328,9 +333,9 @@ O arquivo `db/seeds.rb` cria:
 3. **Redes sociais:** Links no footer são `#` (placeholder)
 
 ### 12.3 Problemas no Repositório
-1. **Arquivo `core`:** ~11GB no root (não deveria estar no repo)
-2. **Arquivo `views`:** 1500 bytes no root (propósito desconhecido)
-3. **Traduções Devise:** `devise.en.yml` existe mas Devise não está em uso
+- ✅ **Arquivo `core`:** Removido do repositório (não mais presente) — **resolvido em v0.2**
+- **Arquivo `views`:** 1500 bytes no root (saída acidental do `rails generate devise`)
+- **Traduções Devise:** `devise.en.yml` existe mas Devise não está em uso
 
 ### 12.4 Melhorias Sugeridas
 - Implementar password reset real
@@ -338,7 +343,7 @@ O arquivo `db/seeds.rb` cria:
 - Adicionar campos adicionais (e-mail, endereço) aos contatos
 - Implementar busca full-text
 - Adicionar testes model completos
-- Corrigir typo do Turbo CDN
+- ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
 - Remover arquivos desnecessários do repositório
 
 ---
@@ -358,5 +363,14 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 ---
 
+## 14. Histórico de Versões
+
+| Versão | Data | Descrição |
+|--------|------|-----------|
+| 0.1 | Abr 2026 | Documentação inicial do lançamento |
+| 0.2 | Ago 2026 | Alinhamento com o código atual: admin por coluna no banco, "Lembrar-me" funcional, Turbo via importmap, Ruby 3.3.0, Capybara/Selenium configurados, **upgrade rspec-rails 3.9.1 → 7.1.1** (corrige incompatibilidade com Rails 7.0.8), README atualizado |
+
+---
+
 **Arquivo gerado por:** opencode/big-pickle  
-**Data:** 30 de Abril de 2026
+**Atualizado:** 13 de Agosto de 2026

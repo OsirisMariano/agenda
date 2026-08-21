@@ -10,6 +10,7 @@ gem "bootsnap", require: false
 gem "bootstrap", "~> 5.2", ">= 5.2.3"
 gem "importmap-rails"
 gem "jbuilder"
+gem "logger"
 gem "net-http", require: false
 gem "net-imap", require: false
 gem "net-protocol", require: false
@@ -32,7 +33,7 @@ group :development, :test do
   gem "debug", platforms: [:mri, :mingw, :x64_mingw]
   gem "rails-controller-testing"
   gem "rspec-json_expectations"
-  gem "rspec-rails", "~> 3.4", ">= 3.4.2"
+  gem "rspec-rails", "~> 7.1"
   gem "shoulda-matchers", "~> 5.0"
   gem "rubocop-rails", "~> 2.24", ">= 2.24.1"
   gem "rubocop-shopify", "~> 2.15", ">= 2.15.1"
