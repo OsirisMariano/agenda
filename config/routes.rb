@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  get 'sessions/new'
+  get "sessions/new"
   get "users/new"
   root to: "static_pages#index"
 
   # Rotas sobre o software
-  get "sobre",    to: "static_pages#sobre"
+  get "sobre", to: "static_pages#sobre"
 
   get "entrar", to: "sessions#new", as: "entrar"
   post "entrar", to: "sessions#create"

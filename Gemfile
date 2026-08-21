@@ -26,8 +26,7 @@ gem "turbo-rails"
 gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 # gem 'devise', '~> 4.9', '>= 4.9.3'
 gem "dotenv-rails"
-gem 'rubyzip', '~> 2.3.0'
-
+gem "rubyzip", "~> 2.3.0"
 
 group :development, :test do
   gem "capybara"
