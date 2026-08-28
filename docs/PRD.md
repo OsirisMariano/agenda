@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.3  
+**Versão:** 0.4  
 **Data:** Agosto 2026  
-**Status:** Lançamento Inicial (v0.3 - Melhorias: paginação, validações e testes)
+**Status:** Lançamento Inicial (v0.4 - Melhorias: paginação, validações, testes e CI)
 
 ---
 
@@ -38,6 +38,7 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 | **Testes** | RSpec + Capybara | rspec-rails 7.1.1 |
 | **Paginação** | Pagy | 9.4.0 |
 | **Servidor** | Puma | 5.6.9 |
+| **CI** | GitHub Actions (lint + test) | - |
 | **Deploy** | Docker Compose | - |
 
 ---
@@ -298,6 +299,12 @@ bundle exec rspec
 bundle exec rubocop
 ```
 
+### 9.4 CI — GitHub Actions (`.github/workflows/ci.yml`)
+
+- Triggers: `pull_request` (todas) + `push` em `main` e `develop`
+- **Job `lint`:** `ruby/setup-ruby@v1` (lê `.ruby-version`, `bundler-cache: true`) + `bundle exec rubocop`
+- **Job `test`:** service container `postgres:12.3` com health check `pg_isready`, envs `POSTGRES_*` (parity com `database.yml`), instala `libpq-dev` + `chromium-driver`, roda `bin/rails db:create db:schema:load` (sem seed — seed colide com `user_spec`) e `bundle exec rspec`
+
 ---
 
 ## 10. Testes
@@ -386,9 +393,10 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 |--------|------|-----------|
 | 0.1 | Abr 2026 | Documentação inicial do lançamento |
 | 0.2 | Ago 2026 | Alinhamento com o código atual: admin por coluna no banco, "Lembrar-me" funcional, Turbo via importmap, Ruby 3.3.0, Capybara/Selenium configurados, **upgrade rspec-rails 3.9.1 → 7.1.1** (corrige incompatibilidade com Rails 7.0.8), README atualizado |
+| 0.4 | Ago 2026 | **CI com GitHub Actions** (`.github/workflows/ci.yml`): jobs `lint` (rubocop) e `test` (rspec com Postgres 12.3 em service container), triggers em PRs e `push` em `main`/`develop` |
 | 0.3 | Ago 2026 | Melhorias: **paginação com Pagy** (12/página), **validações de contato** (formato brasileiro de telefone + unicidade por usuário + índices únicos no banco), **"Lembrar-me" com expiração de 2 semanas**, **specs expandidos** (models, controllers, requests, features — 51 exemplos), correção do **label/input do form de login** (ids conflitantes), remoção de arquivos residuais (`views`, `test_hook.rb`) |
 
 ---
 
 **Arquivo gerado por:** opencode/big-pickle  
-**Atualizado:** 13 de Agosto de 2026
+**Atualizado:** 28 de Agosto de 2026
