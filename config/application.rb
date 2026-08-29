@@ -14,6 +14,9 @@ module ContactList
     config.load_defaults(7.0)
     config.i18n.default_locale = :"pt-BR"
 
+    # Rate limit de login (rack-attack)
+    config.middleware.use(Rack::Attack)
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
