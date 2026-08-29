@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.5  
+**Versão:** 0.6  
 **Data:** Agosto 2026  
-**Status:** Lançamento Inicial (v0.5 - Recuperação de senha por e-mail)
+**Status:** Lançamento Inicial (v0.6 - Rate limit no login)
 
 ---
 
@@ -35,6 +35,7 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 | **Database** | PostgreSQL | 12.3 (Docker) |
 | **Asset Pipeline** | Importmap + Sprockets | - |
 | **Autenticação** | Custom (has_secure_password + bcrypt) | bcrypt 3.1.20 |
+| **Rate limit** | rack-attack | 6.8.0 |
 | **Testes** | RSpec + Capybara | rspec-rails 7.1.1 |
 | **Paginação** | Pagy | 9.4.0 |
 | **Servidor** | Puma | 5.6.9 |
@@ -125,6 +126,9 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 
 ### 4.3 Páginas Estáticas
 
+- **Home:** `GET /` → `static_pages#index` - Apresentação do sistema com features
+- **Sobre:** `GET /sobre` → `static_pages#sobre` - Informações sobre o projeto
+
 ### 4.4 Recuperação de Senha 🔑 (RECUPERAÇÃO)
 
 #### Solicitação (`GET/POST /recuperar-senha`)
@@ -143,8 +147,16 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 - `reset_authenticated?` compara com `BCrypt::Password.new(...).is_password?` (token vs digest)
 - E-mail de destino **sempre** o da consulta (`params[:email]`), para não vazar para alguém lendo a URL
 - `logged_in_user`/admin não interfere: acesso a `/recuperar-senha*` não exige login
-- **Home:** `GET /` → `static_pages#index` - Apresentação do sistema com features
-- **Sobre:** `GET /sobre` → `static_pages#sobre` - Informações sobre o projeto
+
+### 4.5 Proteção contra Brute-Force (Rate Limit) 🛡️
+
+- **Middleware:** `rack-attack` registrado via `config.middleware.use(Rack::Attack)`
+- **Alvo:** `POST /entrar` → `sessions#create`
+- **Limite:** 5 tentativas por IP por minuto
+- **Resposta:** HTTP 429 com mensagem genérica pt-BR "Muitas tentativas de login. Tente novamente em 1 minuto." (não revela se o e-mail existe) e header `Retry-After: 60`
+- **Store:** `Rails.cache` (`:memory_store` em dev/prod; `:null_store` em teste torna o throttle inerte por padrão)
+- **Specs:** `spec/requests/rack_attack_spec.rb` cobre bloqueio (429), liberação após a janela de 1 min e não-afetamento de outras rotas
+- **Débito documentado:** `:memory_store` é por processo — com múltiplos workers Puma o limite vale por processo (§12.4, revisitar junto da US08)
 
 ---
 
@@ -294,6 +306,11 @@ end
 - Strong parameters em todos os controllers
 - `filter_parameter_logging` para senhas em logs
 
+### 8.4 Rate Limit (anti brute-force)
+- Middleware `rack-attack` com throttle de **5 tentativas de login por IP / minuto** (`POST /entrar`)
+- Resposta HTTP 429 genérica em pt-BR; janela controlada por `Retry-After: 60`
+- Store = `Rails.cache` (por processo em dev/prod — ver débito em §12.4)
+
 ---
 
 ## 9. Configuração e Deploy
@@ -340,7 +357,7 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **77 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **80 exemplos, 0 falhas**
 - **Testes de model:**
   - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
   - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca)
@@ -394,12 +411,14 @@ O arquivo `db/seeds.rb` cria:
 ### 12.4 Melhorias Sugeridas
 - ✅ Implementar password reset real — **concluído em v0.5**
 - ✅ Adicionar paginação na listagem de contatos (Pagy, 12/página) — **concluído em v0.3**
+- ✅ Adicionar proteção contra brute-force no login (rack-attack, 5 tentativas/IP/min) — **concluído em v0.6**
 - Adicionar campos adicionais (e-mail, endereço) aos contatos
 - Implementar busca full-text
 - ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
 - ✅ Remover arquivos desnecessários do repositório (`views`, `test_hook.rb`) — **concluído em v0.3**
 - Rodar rubocop no código legado (migrations antigas com offenses pré-existentes)
+- Rate limit via `:memory_store` é por processo Puma — em deploy multi-worker, migrar para store compartilhado (Redis) na US08
 
 ---
 
@@ -411,6 +430,7 @@ O projeto **Agenda** entrega um sistema funcional de gestão de contatos com:
 - ✅ Interface responsiva com Bootstrap 5
 - ✅ Busca e ordenação de contatos
 - ✅ Privacidade garantida (usuários veem apenas seus dados)
+- ✅ Proteção contra brute-force no login (rate limit rack-attack)
 - ✅ Deploy via Docker configurado
 - ✅ Estrutura para testes com RSpec
 
@@ -422,6 +442,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.6 | Ago 2026 | **Rate limit no login**: gem `rack-attack`, middleware + initializer (`config/initializers/rack_attack.rb`, 5 tentativas/IP/min em `POST /entrar`, resposta 429 pt-BR), `Rack::Attack.throttled_responder`, store fresco por exemplo nos specs, **80 exemplos** (request specs: bloqueio 429, liberação da janela, não-afetamento de rotas) |
 | 0.5 | Ago 2026 | **Recuperação de senha por e-mail**: rotas `/recuperar-senha*`, `PasswordResetsController`, `UserMailer#password_reset` (assunto pt-BR), views `password_reset.{html,text}` e `password_resets/{new,edit}`, token+digest com expiração de 2h, link "Esqueci minha senha?" no login, `letter_opener` em dev, mensagens genéricas, **77 exemplos** (models, mailers, requests, features) |
 | 0.1 | Abr 2026 | Documentação inicial do lançamento |
 | 0.2 | Ago 2026 | Alinhamento com o código atual: admin por coluna no banco, "Lembrar-me" funcional, Turbo via importmap, Ruby 3.3.0, Capybara/Selenium configurados, **upgrade rspec-rails 3.9.1 → 7.1.1** (corrige incompatibilidade com Rails 7.0.8), README atualizado |

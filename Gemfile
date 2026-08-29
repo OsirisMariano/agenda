@@ -18,6 +18,7 @@ gem "net-smtp", require: false
 gem "pagy", "~> 9.0"
 gem "pg", "~> 1.1"
 gem "puma", "~> 5.0"
+gem "rack-attack", "~> 6.7"
 gem "rails", "~> 7.0.5", ">= 7.0.5.1"
 gem "sassc-rails"
 gem "sprockets-rails"

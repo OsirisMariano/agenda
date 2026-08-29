@@ -84,3 +84,15 @@ end
 Capybara.server = :puma, { Silent: true }
 Capybara.default_driver = :rack_test
 Capybara.javascript_driver = :selenium_chrome_headless
+
+# Rack::Attack: store fresco por exemplo p/ não vazar contagem de tentativas
+# entre exemplos — cada exemplo começa do zero.
+RSpec.configure do |config|
+  config.before do
+    Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
+  end
+
+  config.after do
+    Rack::Attack.cache.store = nil
+  end
+end
