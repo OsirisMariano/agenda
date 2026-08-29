@@ -1,0 +1,29 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6 col-xl-4">
+      <div class="text-center mb-4">
+        <i class="bi bi-key text-primary" style="font-size: 3rem;"></i>
+        <h1 class="h3 mt-2 fw-normal">Recuperar senha</h1>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <p class="text-center text-muted">Digite seu e-mail cadastrado. Enviaremos um link para redefinir sua senha.</p>
+
+          <%= form_with url: recuperar_senha_path, local: true do |form| %>
+            <div class="mb-3">
+              <%= form.label :email, "E-mail", class: 'form-label' %>
+              <%= form.email_field :email, class: 'form-control', placeholder: 'name@example.com' %>
+            </div>
+
+            <%= form.submit "Enviar link de recuperação", class: 'btn btn-primary w-100 py-2' %>
+          <% end %>
+
+          <p class="mt-3 text-center mb-0">
+            <%= link_to 'Voltar para o login', entrar_path %>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

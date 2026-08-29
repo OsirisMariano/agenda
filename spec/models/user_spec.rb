@@ -53,4 +53,60 @@ RSpec.describe(User, type: :model) do
       expect(described_class.new(admin: true).admin?).to(be(true))
     end
   end
+
+  describe "recuperação de senha" do
+    let(:user) { create_user }
+
+    describe "#create_reset_digest" do
+      it "define o digest, o horário e o token na memória" do
+        user.create_reset_digest
+
+        expect(user.reset_digest).to(be_present)
+        expect(user.reset_sent_at).to(be_present)
+        expect(user.reset_token).to(be_present)
+      end
+
+      it "não armazena o token cru no banco" do
+        user.create_reset_digest
+
+        expect(user.reload.reset_digest).not_to(eq(user.reset_token))
+        expect(BCrypt::Password.new(user.reset_digest) == user.reset_token).to(be(true))
+      end
+    end
+
+    describe "#reset_authenticated?" do
+      before { user.create_reset_digest }
+
+      it "retorna true quando o token é o correto" do
+        expect(user.reset_authenticated?(user.reset_token)).to(be(true))
+      end
+
+      it "retorna false quando o token é inválido" do
+        expect(user.reset_authenticated?("token-invalido")).to(be(false))
+      end
+
+      it "retorna false quando não há digest" do
+        expect(described_class.new.reset_authenticated?("qualquer")).to(be(false))
+      end
+    end
+
+    describe "#reset_expired?" do
+      it "retorna false logo após criar o digest" do
+        user.create_reset_digest
+
+        expect(user.reset_expired?).to(be(false))
+      end
+
+      it "retorna true quando nunca houve digest" do
+        expect(described_class.new.reset_expired?).to(be(true))
+      end
+
+      it "retorna true após 2 horas" do
+        user.create_reset_digest
+        user.update!(reset_sent_at: 3.hours.ago)
+
+        expect(user.reset_expired?).to(be(true))
+      end
+    end
+  end
 end

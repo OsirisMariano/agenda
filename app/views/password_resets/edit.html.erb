@@ -1,0 +1,33 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6 col-xl-4">
+      <div class="text-center mb-4">
+        <i class="bi bi-shield-lock text-primary" style="font-size: 3rem;"></i>
+        <h1 class="h3 mt-2 fw-normal">Definir nova senha</h1>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <%= form_with model: @user, url: recuperar_senha_path, method: :patch do |form| %>
+            <%= hidden_field_tag :token, params[:token] %>
+            <%= hidden_field_tag :email, params[:email] %>
+
+            <div class="mb-3">
+              <%= form.label :password, "Nova senha", class: 'form-label' %>
+              <%= form.password_field :password, class: form_field_class(form, :password), placeholder: 'Mínimo 6 caracteres' %>
+              <%= form_field_error(form, :password) %>
+            </div>
+
+            <div class="mb-3">
+              <%= form.label :password_confirmation, "Confirmar nova senha", class: 'form-label' %>
+              <%= form.password_field :password_confirmation, class: form_field_class(form, :password_confirmation), placeholder: 'Repita a senha' %>
+              <%= form_field_error(form, :password_confirmation) %>
+            </div>
+
+            <%= form.submit "Redefinir senha", class: 'btn btn-primary w-100 py-2' %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
