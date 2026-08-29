@@ -15,6 +15,11 @@ Rails.application.routes.draw do
   get "cadastro", to: "users#new", as: "cadastro"
   get "usuarios", to: "users#index"
 
+  get "recuperar-senha", to: "password_resets#new", as: "recuperar_senha"
+  post "recuperar-senha", to: "password_resets#create"
+  get "recuperar-senha/edit", to: "password_resets#edit", as: "edit_recuperar_senha"
+  patch "recuperar-senha", to: "password_resets#update"
+
   resources :contacts, only: [:index, :new, :create, :edit, :update, :destroy]
   resources :users, only: [:index, :create]
 end

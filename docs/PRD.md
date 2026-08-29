@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.4  
+**Versão:** 0.5  
 **Data:** Agosto 2026  
-**Status:** Lançamento Inicial (v0.4 - Melhorias: paginação, validações, testes e CI)
+**Status:** Lançamento Inicial (v0.5 - Recuperação de senha por e-mail)
 
 ---
 
@@ -124,6 +124,25 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 - **Confirmação:** Via Turbo confirm (`data-turbo-confirm`)
 
 ### 4.3 Páginas Estáticas
+
+### 4.4 Recuperação de Senha 🔑 (RECUPERAÇÃO)
+
+#### Solicitação (`GET/POST /recuperar-senha`)
+- Formulário de e-mail na rota `/recuperar-senha`
+- Usuário preenche o e-mail da conta e é gerado um **token** (64 bytes hex) + `reset_sent_at` via `create_reset_digest`
+- Envio de e-mail (`password_reset`) com link contendo `token` e `email` — vencimento de **2 horas**
+- **Mensagem genérica** em ambos os casos (exista ou não a conta) para não revelar e-mails cadastrados
+
+#### Redefinição (`GET/PATCH /recuperar-senha/edit`)
+- Token e e-mail chegam na URL (`edit_recuperar_senha_url`)
+- `PATCH` valida token (**ainda não expirado**), confirmação de senha e define a nova senha
+- Redireciona para o login com flash de sucesso
+
+#### Considerações de Segurança
+- Token é um `attr_reader` do objeto `User` (nunca persiste em claro, guarda-se apenas o `digest`)
+- `reset_authenticated?` compara com `BCrypt::Password.new(...).is_password?` (token vs digest)
+- E-mail de destino **sempre** o da consulta (`params[:email]`), para não vazar para alguém lendo a URL
+- `logged_in_user`/admin não interfere: acesso a `/recuperar-senha*` não exige login
 - **Home:** `GET /` → `static_pages#index` - Apresentação do sistema com features
 - **Sobre:** `GET /sobre` → `static_pages#sobre` - Informações sobre o projeto
 
@@ -167,6 +186,12 @@ class User < ApplicationRecord
 end
 ```
 
+**Métodos de recuperação de senha:**
+- `create_reset_digest` — gera `reset_token` (64 bytes hex, apenas em memória), atualiza `reset_digest` (hash SHA256) e `reset_sent_at`
+- `reset_authenticated?(token)` — compara `BCrypt::Password.new(reset_digest)` com o token recebido
+- `reset_expired?` — expira em 2 horas (`reset_sent_at < 2.hours.ago`)
+- Colunas: `reset_digest` (string) e `reset_sent_at` (datetime), adicionadas via migration `20260829002247_add_reset_digest_to_users.rb`
+
 #### Contact (`app/models/contact.rb`)
 ```ruby
 class Contact < ApplicationRecord
@@ -205,6 +230,10 @@ end
 | GET | `/contacts/:id/edit` | contacts#edit | edit_contact_path |
 | PATCH/PUT | `/contacts/:id` | contacts#update | contact_path |
 | DELETE | `/contacts/:id` | contacts#destroy | contact_path |
+| GET | `/recuperar-senha` | password_resets#new | recuperar_senha_path |
+| POST | `/recuperar-senha` | password_resets#create | - |
+| GET | `/recuperar-senha/edit` | password_resets#edit | edit_recuperar_senha_path |
+| PATCH | `/recuperar-senha` | password_resets#update | - |
 
 ---
 
@@ -241,6 +270,7 @@ end
 - **Login:** E-mail, senha, checkbox "Lembrar-me" (cookie assinado com expiração de 2 semanas)
 - **Cadastro:** Nome, e-mail, senha, confirmação com validações visuais
 - **Contato:** Nome e telefone com feedback de erros
+- **Recuperar senha:** Etapa 1 (e-mail) e Etapa 2 (nova senha + confirmação) com validações visuais; link "Esqueci minha senha?" na tela de login
 
 ---
 
@@ -310,16 +340,17 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **51 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **77 exemplos, 0 falhas**
 - **Testes de model:**
-  - `user_spec.rb` (associações, validações, `admin?`)
+  - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
   - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca)
 - **Testes de controller:**
   - `users_controller_spec.rb` (cadastro, autorização de admin)
   - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
   - `contacts_controller_spec.rb` (CRUD, paginação, busca, isolamento por usuário)
-- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me")
-- **Testes de feature:** `authentication_spec.rb` (cadastro → login → sair, com `rack_test`)
+- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente)
+- **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo)
+- **Testes de feature:** `authentication_spec.rb` e `password_reset_spec.rb` (solicitação, link no e-mail e redefinição com novo login, `rack_test`)
 - **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
@@ -350,7 +381,7 @@ O arquivo `db/seeds.rb` cria:
 - ✅ **Turbo CDN:** Linha CDN `strurbo-rails` removida (Turbo já carregado via importmap) — **resolvido em v0.2**
 
 ### 12.2 Funcionalidades Incompletas
-1. **Recuperação de senha:** Citada no README mas não implementada (Devise comentado)
+1. ✅ **Recuperação de senha:** Implementada em v0.5 (token + digest + e-mail com `letter_opener` em dev, link `/recuperar-senha/edit`, expiração de 2h, mensagens genéricas) — **resolvido em v0.5**
 2. **Newsletter:** Formulário no footer é mock (não funcional)
 3. **Redes sociais:** Links no footer são `#` (placeholder)
 
@@ -361,7 +392,7 @@ O arquivo `db/seeds.rb` cria:
 - **Traduções Devise:** `devise.en.yml` existe mas Devise não está em uso
 
 ### 12.4 Melhorias Sugeridas
-- Implementar password reset real
+- ✅ Implementar password reset real — **concluído em v0.5**
 - ✅ Adicionar paginação na listagem de contatos (Pagy, 12/página) — **concluído em v0.3**
 - Adicionar campos adicionais (e-mail, endereço) aos contatos
 - Implementar busca full-text
@@ -391,6 +422,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.5 | Ago 2026 | **Recuperação de senha por e-mail**: rotas `/recuperar-senha*`, `PasswordResetsController`, `UserMailer#password_reset` (assunto pt-BR), views `password_reset.{html,text}` e `password_resets/{new,edit}`, token+digest com expiração de 2h, link "Esqueci minha senha?" no login, `letter_opener` em dev, mensagens genéricas, **77 exemplos** (models, mailers, requests, features) |
 | 0.1 | Abr 2026 | Documentação inicial do lançamento |
 | 0.2 | Ago 2026 | Alinhamento com o código atual: admin por coluna no banco, "Lembrar-me" funcional, Turbo via importmap, Ruby 3.3.0, Capybara/Selenium configurados, **upgrade rspec-rails 3.9.1 → 7.1.1** (corrige incompatibilidade com Rails 7.0.8), README atualizado |
 | 0.4 | Ago 2026 | **CI com GitHub Actions** (`.github/workflows/ci.yml`): jobs `lint` (rubocop) e `test` (rspec com Postgres 12.3 em service container), triggers em PRs e `push` em `main`/`develop` |
@@ -399,4 +431,4 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 ---
 
 **Arquivo gerado por:** opencode/big-pickle  
-**Atualizado:** 28 de Agosto de 2026
+**Atualizado:** 29 de Agosto de 2026
