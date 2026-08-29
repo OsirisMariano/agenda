@@ -92,3 +92,21 @@ System specs drive headless Chrome at 1400x1400.
 
 Run a single file: `bundle exec rspec spec/models/contact_spec.rb`
 Run a single example: `bundle exec rspec spec/models/contact_spec.rb:22`
+
+## Login rate limit (rack-attack)
+
+`config/initializers/rack_attack.rb` throttles `POST /entrar` to 5 attempts per
+IP per minute (HTTP 429). Uses `Rails.cache` (`:memory_store` in dev/prod;
+`:null_store` in test). Specs in `spec/requests/rack_attack_spec.rb`.
+
+In specs, `spec/rails_helper.rb` swaps `Rack::Attack.cache.store` for a fresh
+`MemoryStore` per example so counters never leak between examples.
+
+## Git Flow and issue closing
+
+Workflow: `feature/*` → `develop`; releases promote `develop` → `main` (PR).
+GitHub only auto-closes issues when a PR merges into the *default branch*
+(`main`). A merge into `develop` with `Closes #X` does NOT close the issue —
+close board issues manually at release time (or put `Closes #X` on the release
+PR). P0/P1/P2 labels and milestones live on the GitHub board as source of
+truth; `docs/backlog.md` mirrors status.
