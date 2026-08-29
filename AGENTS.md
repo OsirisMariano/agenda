@@ -7,6 +7,17 @@ bundle exec rubocop      # lint (inherits rubocop-shopify)
 
 Run lint first, then tests. No separate typecheck step (Ruby).
 
+Important when running specs inside the Docker container: `docker-compose.yml`
+pins `RAILS_ENV=development` on the `web` service, so a bare `bundle exec rspec`
+in the container boots the app in DEVELOPMENT (random failures: 403 Host
+Authorization on `www.example.com`, letter_opener instead of test delivery).
+Always run specs in the container with `RAILS_ENV=test` (CI already sets it):
+
+```
+docker compose exec web sh -c 'RAILS_ENV=test bundle exec rspec'
+docker compose exec web sh -c 'RAILS_ENV=test bin/rails db:create db:schema:load'
+```
+
 ## Environment prerequisites
 
 PostgreSQL must be running. DB connection uses env vars:
