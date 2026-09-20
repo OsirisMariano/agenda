@@ -110,11 +110,19 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 
 #### Criação de Contato
 - **Rota:** `GET /contacts/new` → `contacts#new`
-- **Campos:** Nome, Telefone
+- **Campos:** Nome, Telefone, E-mail (opcional), Endereço (opcional), Notas (opcional)
 - **Validações:**
   - Nome: obrigatório, máximo 50 caracteres
   - Telefone: obrigatório, formato brasileiro `(XX) XXXXX-XXXX` (com DDD e código de país opcionais), único por usuário
+  - E-mail: **opcional**, formato válido e máximo 255 caracteres (quando preenchido)
+  - Endereço: opcional, máximo 255 caracteres
+  - Notas: opcional, máximo 1000 caracteres (tipo `text`)
   - Índice único em `(user_id, phone)` e em `users.email` no banco de dados
+
+#### Detalhes de Contato
+- **Rota:** `GET /contacts/:id` → `contacts#show`
+- Exibe Nome, Telefone, E-mail, Endereço e Notas (campos vazios são ocultados)
+- Acesso restrito ao dono do contato
 
 #### Edição de Contato
 - **Rota:** `GET /contacts/:id/edit` → `contacts#edit`

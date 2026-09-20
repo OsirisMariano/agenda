@@ -1,0 +1,53 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-person me-2"></i><%= @contact.name %></h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <p class="card-text mb-1">
+              <i class="bi bi-telephone me-2 text-primary"></i><strong>Telefone:</strong> <%= @contact.phone %>
+            </p>
+            <% if @contact.email.present? %>
+              <p class="card-text mb-1">
+                <i class="bi bi-envelope me-2 text-primary"></i><strong>E-mail:</strong> <%= @contact.email %>
+              </p>
+            <% end %>
+            <% if @contact.address.present? %>
+              <p class="card-text mb-1">
+                <i class="bi bi-geo-alt me-2 text-primary"></i><strong>Endereço:</strong> <%= @contact.address %>
+              </p>
+            <% end %>
+          </div>
+          <% if @contact.notes.present? %>
+            <div class="mb-3">
+              <p class="card-text mb-1">
+                <i class="bi bi-journal-text me-2 text-primary"></i><strong>Notas:</strong>
+              </p>
+              <div class="border rounded bg-light p-3">
+                <%= simple_format @contact.notes %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+          <%= link_to contacts_path, class: 'btn btn-outline-secondary' do %>
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+          <% end %>
+          <div>
+            <%= link_to edit_contact_path(@contact), class: 'btn btn-warning' do %>
+              <i class="bi bi-pencil me-1"></i>Editar
+            <% end %>
+            <%= button_to contact_path(@contact), method: :delete,
+                form: { data: { turbo_confirm: "Tem certeza que deseja excluir #{@contact.name}?" } },
+                class: 'btn btn-danger' do %>
+              <i class="bi bi-trash me-1"></i>Excluir
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
