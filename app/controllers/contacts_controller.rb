@@ -2,7 +2,7 @@
 
 class ContactsController < ApplicationController
   before_action :require_logged_in_user
-  before_action :set_contact, only: [:edit, :update, :destroy]
+  before_action :set_contact, only: [:show, :edit, :update, :destroy]
 
   def index
     @contacts = current_user.contacts
@@ -10,6 +10,10 @@ class ContactsController < ApplicationController
     @contacts = @contacts.order(sort_column => :asc)
 
     @pagy, @contacts = pagy(@contacts)
+  end
+
+  def show
+    @contact = current_user.contacts.find(params[:id])
   end
 
   def new
@@ -52,6 +56,6 @@ class ContactsController < ApplicationController
   end
 
   def contact_params
-    params.require(:contact).permit(:name, :phone)
+    params.require(:contact).permit(:name, :phone, :email, :address, :notes)
   end
 end

@@ -55,10 +55,17 @@
                   <i class="bi bi-person-fill text-primary fs-4"></i>
                 </div>
                 <div class="flex-grow-1 overflow-hidden">
-                  <h5 class="card-title mb-1 text-truncate"><%= contact.name %></h5>
-                  <p class="card-text text-muted mb-0 text-truncate">
+                  <h5 class="card-title mb-1 text-truncate">
+                    <%= link_to contact.name, contact, class: 'text-decoration-none' %>
+                  </h5>
+                  <p class="card-text text-muted mb-1 text-truncate">
                     <i class="bi bi-telephone me-2"></i><%= contact.phone %>
                   </p>
+                  <% if contact.email.present? %>
+                    <p class="card-text text-muted mb-0 text-truncate">
+                      <i class="bi bi-envelope me-2"></i><%= contact.email %>
+                    </p>
+                  <% end %>
                 </div>
               </div>
             </div>

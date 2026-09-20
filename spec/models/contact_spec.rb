@@ -41,6 +41,57 @@ RSpec.describe(Contact, type: :model) do
     end
   end
 
+  describe "email" do
+    it "é opcional" do
+      contact = described_class.new(user: create_user, name: "Ana", phone: "(11) 98888-1234")
+      expect(contact).to(be_valid)
+    end
+
+    it "aceita formato válido" do
+      contact = described_class.new(
+        user: create_user, name: "Ana", phone: "(11) 98888-1234", email: "ana@exemplo.com",
+      )
+      expect(contact).to(be_valid)
+    end
+
+    it "rejeita formato inválido" do
+      contact = described_class.new(
+        user: create_user, name: "Ana", phone: "(11) 98888-1234", email: "email-sem-arroba",
+      )
+      expect(contact).not_to(be_valid)
+      expect(contact.errors[:email]).to(include("inválido."))
+    end
+  end
+
+  describe "campos extras (address/notes)" do
+    it "aceita endereço dentro do limite" do
+      contact = described_class.new(
+        user: create_user,
+        name: "Ana",
+        phone: "(11) 98888-1234",
+        address: "Rua X, 100",
+        notes: "Trabalho",
+      )
+      expect(contact).to(be_valid)
+    end
+
+    it "rejeita endereço acima de 255 caracteres" do
+      contact = described_class.new(
+        user: create_user, name: "Ana", phone: "(11) 98888-1234", address: "a" * 256,
+      )
+      expect(contact).not_to(be_valid)
+      expect(contact.errors[:address]).to(include("Muito grande. Máximo de 255 caracteres"))
+    end
+
+    it "rejeita notas acima de 1000 caracteres" do
+      contact = described_class.new(
+        user: create_user, name: "Ana", phone: "(11) 98888-1234", notes: "a" * 1001,
+      )
+      expect(contact).not_to(be_valid)
+      expect(contact.errors[:notes]).to(include("Muito grande. Máximo de 1000 caracteres"))
+    end
+  end
+
   describe ".search" do
     it "busca por nome" do
       user = create_user

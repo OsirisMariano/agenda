@@ -31,6 +31,28 @@ RSpec.describe("Contatos", type: :feature) do
     expect(page).to(have_content("Bruno Costa"))
   end
 
+  it "cria um contato com e-mail, endereço e notas e mostra os detalhes" do
+    visit entrar_path
+    fill_in "E-mail", with: user.email
+    fill_in "Senha", with: "123456"
+    click_on "Entrar"
+    click_on "Ver Meus Contatos"
+
+    click_on "Novo Contato", match: :first
+    fill_in "Nome", with: "Carla Dias"
+    fill_in "Telefone", with: "(11) 97777-4321"
+    fill_in "E-mail", with: "carla@exemplo.com"
+    fill_in "Endereço", with: "Rua dos Ipês, 50"
+    fill_in "Notas", with: "Colega do trabalho"
+    click_on "Criar Contato"
+
+    expect(page).to(have_content("Contato criado com sucesso!"))
+    click_on "Carla Dias"
+    expect(page).to(have_content("carla@exemplo.com"))
+    expect(page).to(have_content("Rua dos Ipês, 50"))
+    expect(page).to(have_content("Colega do trabalho"))
+  end
+
   it "mostra paginação quando há mais de 12 contatos" do
     13.times do
       create_contact(user)
