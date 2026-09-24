@@ -1,0 +1,31 @@
+<%= form_for contact do |f| %>
+  <div class="mb-3">
+    <%= f.label :name, "Nome", class: 'form-label' %>
+    <%= f.text_field :name, class: form_field_class(f, :name), placeholder: 'Nome completo' %>
+    <%= form_field_error(f, :name) %>
+  </div>
+  <div class="mb-3">
+    <%= f.label :phone, "Telefone", class: 'form-label' %>
+    <%= f.text_field :phone, class: form_field_class(f, :phone), placeholder: '(00) 00000-0000' %>
+    <%= form_field_error(f, :phone) %>
+  </div>
+  <div class="mb-3">
+    <%= f.label :email, "E-mail", class: 'form-label' %>
+    <%= f.text_field :email, class: form_field_class(f, :email), placeholder: 'nome@exemplo.com' %>
+    <%= form_field_error(f, :email) %>
+  </div>
+  <div class="mb-3">
+    <%= f.label :address, "Endereço", class: 'form-label' %>
+    <%= f.text_field :address, class: form_field_class(f, :address), placeholder: 'Rua, número, bairro, cidade' %>
+    <%= form_field_error(f, :address) %>
+  </div>
+  <div class="mb-3">
+    <%= f.label :notes, "Notas", class: 'form-label' %>
+    <%= f.text_area :notes, class: form_field_class(f, :notes), placeholder: 'Observações sobre o contato...', rows: 3 %>
+    <%= form_field_error(f, :notes) %>
+  </div>
+  <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <%= link_to 'Cancelar', contacts_path, class: 'btn btn-outline-secondary' %>
+    <%= f.submit submit_label, class: 'btn btn-primary' %>
+  </div>
+<% end %>

@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.6  
-**Data:** Agosto 2026  
-**Status:** Lançamento Inicial (v0.6 - Rate limit no login)
+**Versão:** 0.7  
+**Data:** Setembro 2026  
+**Status:** Lançamento Inicial (v0.7 - Campos extras no contato)
 
 ---
 
@@ -110,11 +110,19 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 
 #### Criação de Contato
 - **Rota:** `GET /contacts/new` → `contacts#new`
-- **Campos:** Nome, Telefone
+- **Campos:** Nome, Telefone, E-mail (opcional), Endereço (opcional), Notas (opcional)
 - **Validações:**
   - Nome: obrigatório, máximo 50 caracteres
   - Telefone: obrigatório, formato brasileiro `(XX) XXXXX-XXXX` (com DDD e código de país opcionais), único por usuário
+  - E-mail: **opcional**, formato válido e máximo 255 caracteres (quando preenchido)
+  - Endereço: opcional, máximo 255 caracteres
+  - Notas: opcional, máximo 1000 caracteres (tipo `text`)
   - Índice único em `(user_id, phone)` e em `users.email` no banco de dados
+
+#### Detalhes de Contato
+- **Rota:** `GET /contacts/:id` → `contacts#show`
+- Exibe Nome, Telefone, E-mail, Endereço e Notas (campos vazios são ocultados)
+- Acesso restrito ao dono do contato
 
 #### Edição de Contato
 - **Rota:** `GET /contacts/:id/edit` → `contacts#edit`
@@ -171,11 +179,13 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 │ id              │ 1       N │ id              │
 │ name            │◄──────────│ name            │
 │ email           │           │ phone           │
-│ password_digest │           │ user_id (FK)    │
-│ admin (bool)    │           │ created_at      │
-│ created_at      │           │ updated_at      │
-│ updated_at      │           └─────────────────┘
-└─────────────────┘
+│ password_digest │           │ email           │
+│ admin (bool)    │           │ address         │
+│ created_at      │           │ notes           │
+│ updated_at      │           │ user_id (FK)    │
+└─────────────────┘           │ created_at      │
+                              │ updated_at      │
+                              └─────────────────┘
 ```
 
 ### 5.2 Detalhes dos Modelos
@@ -208,6 +218,7 @@ end
 ```ruby
 class Contact < ApplicationRecord
   PHONE_REGEX = /\A(\+\d{1,3}[-\s.]?)?\(?\d{2}\)?[-\s.]?\d{4,5}[-\s.]?\d{4}\z/
+  EMAIL_REGEX = URI::MailTo::EMAIL_REGEXP
 
   belongs_to :user
 
@@ -215,12 +226,18 @@ class Contact < ApplicationRecord
   validates :phone, presence: true,
                     format: { with: PHONE_REGEX, message: "inválido. Use o formato (XX) XXXXX-XXXX." },
                     uniqueness: { scope: :user_id }
+  validates :email,
+    format: { with: EMAIL_REGEX, allow_blank: true, message: "inválido." },
+    length: { maximum: 255, allow_blank: true }
+  validates :address, length: { maximum: 255 }
+  validates :notes, length: { maximum: 1000 }
 
   scope :search, ->(query) {
-    where("name ILIKE :q OR phone ILIKE :q", q: "%#{query}%")
+    where("name ILIKE :q OR phone ILIKE :q OR email ILIKE :q", q: "%#{query}%")
   }
 end
 ```
+- **Colunas extras** (`email`, `address` string e `notes` text, todas nullable): migration `20260919232741_add_extra_fields_to_contacts`
 
 ---
 
@@ -412,7 +429,7 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Implementar password reset real — **concluído em v0.5**
 - ✅ Adicionar paginação na listagem de contatos (Pagy, 12/página) — **concluído em v0.3**
 - ✅ Adicionar proteção contra brute-force no login (rack-attack, 5 tentativas/IP/min) — **concluído em v0.6**
-- Adicionar campos adicionais (e-mail, endereço) aos contatos
+- ✅ Adicionar campos adicionais (e-mail, endereço e notas) aos contatos — **concluído em v0.7**
 - Implementar busca full-text
 - ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
@@ -429,6 +446,7 @@ O projeto **Agenda** entrega um sistema funcional de gestão de contatos com:
 - ✅ CRUD completo de contatos
 - ✅ Interface responsiva com Bootstrap 5
 - ✅ Busca e ordenação de contatos
+- ✅ Campos extras no contato (e-mail, endereço e notas)
 - ✅ Privacidade garantida (usuários veem apenas seus dados)
 - ✅ Proteção contra brute-force no login (rate limit rack-attack)
 - ✅ Deploy via Docker configurado
@@ -442,6 +460,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.7 | Set 2026 | **Campos extras no contato**: migration aditiva e reversível `email`/`address`/`notes` (nullable) em `contacts`, validações de formato (e-mail) e tamanho, e-mail incluído no scope de busca, strong params atualizados, view `show` de contato e parcial `_form` compartilhado, locals pt-BR atualizados, **91 exemplos** (model, controller, feature). PRD §4.2, §5.1, §5.2 atualizados. |
 | 0.6 | Ago 2026 | **Rate limit no login**: gem `rack-attack`, middleware + initializer (`config/initializers/rack_attack.rb`, 5 tentativas/IP/min em `POST /entrar`, resposta 429 pt-BR), `Rack::Attack.throttled_responder`, store fresco por exemplo nos specs, **80 exemplos** (request specs: bloqueio 429, liberação da janela, não-afetamento de rotas) |
 | 0.5 | Ago 2026 | **Recuperação de senha por e-mail**: rotas `/recuperar-senha*`, `PasswordResetsController`, `UserMailer#password_reset` (assunto pt-BR), views `password_reset.{html,text}` e `password_resets/{new,edit}`, token+digest com expiração de 2h, link "Esqueci minha senha?" no login, `letter_opener` em dev, mensagens genéricas, **77 exemplos** (models, mailers, requests, features) |
 | 0.1 | Abr 2026 | Documentação inicial do lançamento |
@@ -452,4 +471,4 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 ---
 
 **Arquivo gerado por:** opencode/big-pickle  
-**Atualizado:** 29 de Agosto de 2026
+**Atualizado:** 24 de Setembro de 2026

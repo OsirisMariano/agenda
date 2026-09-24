@@ -35,12 +35,29 @@ RSpec.describe(ContactsController, type: :controller) do
     end
 
     it "filtra pela busca" do
-      create_contact(user, name: "Ana Silva")
-      create_contact(user, name: "Bruno Costa")
+      create_contact(user, name: "Ana Silva", phone: "(11) 98888-1234")
+      create_contact(user, name: "Bruno Costa", phone: "(11) 97777-1234")
 
       get :index, params: { q: "Silva" }
 
       expect(assigns(:contacts).map(&:name)).to(contain_exactly("Ana Silva"))
+    end
+  end
+
+  describe "GET #show" do
+    it "exibe o contato do usuário logado" do
+      contact = create_contact(user, email: "ana@exemplo.com")
+
+      get :show, params: { id: contact.id }
+
+      expect(response).to(have_http_status(:success))
+      expect(assigns(:contact)).to(eq(contact))
+    end
+
+    it "não permite ver o contato de outro usuário" do
+      other = create_contact(other_user)
+
+      expect { get(:show, params: { id: other.id }) }.to(raise_error(ActiveRecord::RecordNotFound))
     end
   end
 
@@ -62,6 +79,26 @@ RSpec.describe(ContactsController, type: :controller) do
       end
     end
 
+    context "com os novos campos extra" do
+      it "persiste email, endereço e notas" do
+        post(:create, params: {
+          contact: {
+            name: "Maria",
+            phone: "(11) 96666-1234",
+            email: "maria@exemplo.com",
+            address: "Rua A, 100",
+            notes: "Colega do trabalho",
+          },
+        })
+
+        expect(response).to(redirect_to(contacts_path))
+        contact = user.contacts.find_by(phone: "(11) 96666-1234")
+        expect(contact.email).to(eq("maria@exemplo.com"))
+        expect(contact.address).to(eq("Rua A, 100"))
+        expect(contact.notes).to(eq("Colega do trabalho"))
+      end
+    end
+
     context "com dados inválidos" do
       it "re-renderiza a página de criação" do
         post :create, params: { contact: { name: "", phone: "" } }
@@ -78,6 +115,16 @@ RSpec.describe(ContactsController, type: :controller) do
         patch :update, params: { id: contact.id, contact: { name: "Nome Atualizado" } }
         expect(contact.reload.name).to(eq("Nome Atualizado"))
         expect(response).to(redirect_to(contacts_path))
+      end
+
+      it "atualiza email, endereço e notas" do
+        patch :update, params: {
+          id: contact.id,
+          contact: { email: "novo@exemplo.com", address: "Rua B, 200", notes: "Amigo" },
+        }
+        expect(contact.reload.email).to(eq("novo@exemplo.com"))
+        expect(contact.reload.address).to(eq("Rua B, 200"))
+        expect(contact.reload.notes).to(eq("Amigo"))
       end
     end
 
