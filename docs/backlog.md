@@ -1,8 +1,8 @@
 # Backlog do Produto — Agenda
 
-**Versão:** 1.1
-**Data:** Agosto 2026
-**Fonte:** PRD v0.6 + Avaliação do Product Owner
+**Versão:** 1.2
+**Data:** Setembro 2026
+**Fonte:** PRD v0.7 + Avaliação do Product Owner
 **Ferramenta de gestão sugerida:** GitHub Projects (Board)
 
 ---
@@ -21,7 +21,7 @@
 **Risco principal:** usuário que perde a senha fica permanentemente bloqueado — impacto direto na retenção.
 **Risco secundário:** sem CI, regressões podem entrar despercebidas.
 
-> **Atualização (ago/2026, v1.1):** a avaliação acima é o snapshot inicial. US01 (recuperação de senha), US02 (CI) e US03 (rate limit) já estão concluídas — veja os status na seção 2.
+> **Atualização (set/2026, v1.2):** US04 (campos extras no contato) concluída em v0.7 (PR #42, merge em `develop`; release `develop → main` pendente). P0 100% entregue; P1 em andamento. US05 segue parcial (#28). Base verde: **91 exemplos**.
 
 ---
 
@@ -29,6 +29,7 @@
 
 > **Velocidade assumida:** ~15–20 SP/sprint (dev solo, sprint de 2 semanas).
 > **Total inicial:** ~63 SP → ~4 sprints para fechar P0+P1. **Restante (pós-P0):** ~50 SP → ~3 sprints; P2 segue como roadmap contínuo.
+> **Status pós-v0.7:** P0 fechado; P1 restante = US05 (3 SP, parcial) + US06 (8 SP) → ~1–2 sprints para fechar.
 
 ### 🔴 P0 — Crítico (Sprint 1–2)
 
@@ -42,8 +43,8 @@
 
 | # | User Story | Épico | SP | Status |
 |---|-----------|-------|----|--------|
-| US04 | Como usuário, quero campos extras no contato (**e-mail, endereço, notas**) | Produto | 5 | ⬜ backlog |
-| US05 | Como dev, quero **sanear o legado**: rodar RuboCop nas migrations antigas, remover `devise.en.yml`, decidir destino do footer (newsletter/social) | Dívida | 3 | ⚠️ parcial (#28) — lint feito online; falta `devise.en.yml` + decisão do footer |
+| US04 | Como usuário, quero campos extras no contato (**e-mail, endereço, notas**) | Produto | 5 | ✅ v0.7 (#27/#42) — em `develop`, release para `main` pendente |
+| US05 | Como dev, quero **sanear o legado**: remover `devise.en.yml`, decidir destino do footer (newsletter/social mock) e rodar RuboCop nas migrations antigas | Dívida | 3 | ⚠️ parcial (#28) — lint feito online; falta `devise.en.yml` + decisão do footer |
 | US06 | Como usuário, quero **exportar/importar contatos (CSV ou vCard)** para não ficar preso à plataforma | Produto | 8 | ⬜ backlog |
 
 ### 🟢 P2 — Desejável (Backlog futuro)
@@ -59,7 +60,7 @@
 
 ## 3. Critério de Aceite Transversal (todas as USs)
 
-- Specs atualizadas na mesma PR — cobertura não pode regredir dos 77 exemplos atuais (80 com a US03)
+- Specs atualizadas na mesma PR — cobertura não pode regredir dos **91 exemplos atuais**
 - PRD atualizado na mesma PR (seção correspondente + histórico de versões)
 - `bundle exec rspec` e `bundle exec rubocop` passando localmente antes do PR
 
@@ -77,9 +78,9 @@
 
 ## 5. Próximos Passos
 
-1. Definir ferramenta de gestão (GitHub Projects — gratuito, integra com o repo)
-2. Onboarding do dev: README + PRD v0.3 (`docs/PRD.md`) como material inicial
-3. Refinamento das US01–US03 antes do início da Sprint 1
+1. **Release v0.7:** PR `develop → main` (US04) e atualização do board
+2. **Próxima sprint:** finalizar US05 (dívida) e refinar/executar US06 (exportar/importar CSV/vCard)
+3. Manter P2 (US07–US10) como roadmap contínuo; avaliar agendamento da US08 (upgrade Rails) como dívida técnica de segurança
 
 ---
 
@@ -87,6 +88,7 @@
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 1.2 | Set 2026 | US04 concluída (v0.7, #42), critério transversal atualizado para 91 exemplos, próximos passos pós-v0.7 (release + US05/US06), fonte PRD v0.7 |
 | 1.1 | Ago 2026 | Status das USs (US01–US03 concluídas, US05 parcial), critério transversal atualizado para 77 exemplos, fonte PRD v0.6 |
 | 1.0 | Ago 2026 | Catálogo inicial: 10 user stories priorizadas (P0/P1/P2), ~63 SP, critérios de aceite transversais |
 
