@@ -110,3 +110,21 @@ GitHub only auto-closes issues when a PR merges into the *default branch*
 close board issues manually at release time (or put `Closes #X` on the release
 PR). P0/P1/P2 labels and milestones live on the GitHub board as source of
 truth; `docs/backlog.md` mirrors status.
+
+## Branch protection
+
+`main` and `develop` require the `lint` and `test` status checks to pass
+(`strict: true`). **The CI is the quality gate — an approving review is NOT
+required.** The repo has a single maintainer and GitHub forbids self-approval,
+so a review requirement blocks every PR with zero quality gain (the checks
+already reject any test or lint failure).
+
+Decided by the PO on the v0.8 cycle (2026-09-25) and applied with
+`DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews`
+on both branches. That endpoint is surgical and keeps the status checks intact;
+do **not** use `PATCH .../protection`, which replaces the whole rule object and
+can silently drop `lint`/`test`.
+
+Do not re-enable "Require a pull request review before merging" unless a second
+reviewer actually exists. Force-push and branch deletion stay blocked on both
+branches (branch protection + the `main` ruleset).
