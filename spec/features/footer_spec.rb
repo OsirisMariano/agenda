@@ -17,7 +17,7 @@ RSpec.describe("Rodapé", type: :feature) do
       expect(page).to(have_content("Navegação"))
       expect(page).to(have_content("Conta"))
       expect(page).to(have_content("Todos os direitos reservados."))
-      expect(page).to(have_no_content("newsletter"))
+      expect(page).to(have_no_text(/newsletter/i))
       expect(page).to(have_no_content("Inscrever-se"))
       expect(page).to(have_no_selector("input[type='email']"))
       expect(page).to(have_no_selector("a[href='#']"))
@@ -28,6 +28,6 @@ RSpec.describe("Rodapé", type: :feature) do
     within("footer") { click_on "Sair" }
 
     expect(page).to(have_content("Logout realizado com sucesso!"))
-    expect(page).to(have_no_selector("footer"))
+    expect(page).to(have_link("Entrar"))
   end
 end

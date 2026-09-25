@@ -271,7 +271,7 @@ end
 ### 7.1 Layout Principal (`layouts/application.html.erb`)
 - **Header:** Navbar Bootstrap com logo, links de navegação e dropdown do usuário
 - **Flash Messages:** Alertas de sucesso/erro com auto-dismiss
-- **Footer:** Links de navegação (Home, Contatos, Sobre) e de conta (Entrar/Cadastrar ou Meus Contatos/Sair) + copyright — exibido apenas para usuário logado
+- **Footer:** Links de navegação (Home, Contatos, Sobre) e de conta (Meus Contatos, Sair) + copyright — renderizado apenas para usuário logado (mesma condição do header)
 - **Loading State:** Spinner em botões durante submissão de formulários
 
 ### 7.2 Design System
@@ -462,7 +462,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
-| 0.8 | Set 2026 | **Saneamento do legado (US05)**: remoção de `config/locales/devise.en.yml` (Devise fora do Gemfile e sem uso), footer enxuto (removidos o formulário mock de newsletter, os 3 ícones de redes sociais com `href="#"` e os links "Ajuda"/"Privacidade"; colunas rebalanceadas para `col-md-4` e barra inferior simplificada para copyright), spec de feature do rodapé (`spec/features/footer_spec.rb`) garantindo ausência de `a[href="#"]` e de mocks, **93 exemplos**. PRD §7.1, §12.2, §12.3, §12.4 atualizados. |
+| 0.8 | Set 2026 | **Saneamento do legado (US05)**: remoção de `config/locales/devise.en.yml` (Devise fora do Gemfile e sem uso), footer enxuto (removidos o formulário mock de newsletter, os 3 ícones de redes sociais com `href="#"`, os links "Ajuda"/"Privacidade" e o bloco `<% else %>` inalcançável — o footer só é renderizado para usuário logado; colunas rebalanceadas para `col-6 col-md-6` e barra inferior simplificada para copyright), spec de feature do rodapé (`spec/features/footer_spec.rb`) garantindo ausência de `a[href="#"]` e de mocks, **93 exemplos**. PRD §7.1, §10.1, §12.2, §12.3, §12.4 atualizados. |
 | 0.7 | Set 2026 | **Campos extras no contato**: migration aditiva e reversível `email`/`address`/`notes` (nullable) em `contacts`, validações de formato (e-mail) e tamanho, e-mail incluído no scope de busca, strong params atualizados, view `show` de contato e parcial `_form` compartilhado, locals pt-BR atualizados, **91 exemplos** (model, controller, feature). PRD §4.2, §5.1, §5.2 atualizados. |
 | 0.6 | Ago 2026 | **Rate limit no login**: gem `rack-attack`, middleware + initializer (`config/initializers/rack_attack.rb`, 5 tentativas/IP/min em `POST /entrar`, resposta 429 pt-BR), `Rack::Attack.throttled_responder`, store fresco por exemplo nos specs, **80 exemplos** (request specs: bloqueio 429, liberação da janela, não-afetamento de rotas) |
 | 0.5 | Ago 2026 | **Recuperação de senha por e-mail**: rotas `/recuperar-senha*`, `PasswordResetsController`, `UserMailer#password_reset` (assunto pt-BR), views `password_reset.{html,text}` e `password_resets/{new,edit}`, token+digest com expiração de 2h, link "Esqueci minha senha?" no login, `letter_opener` em dev, mensagens genéricas, **77 exemplos** (models, mailers, requests, features) |
@@ -474,4 +474,4 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 ---
 
 **Arquivo gerado por:** opencode/big-pickle  
-**Atualizado:** 24 de Setembro de 2026
+**Atualizado:** 25 de Setembro de 2026

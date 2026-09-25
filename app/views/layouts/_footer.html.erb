@@ -1,7 +1,7 @@
 <footer class="py-5 bg-light">
   <div class="container">
     <div class="row">
-      <div class="col-6 col-md-4 mb-3">
+      <div class="col-6 col-md-6 mb-3">
         <h5 class="text-body-secondary mb-2">Navegação</h5>
         <div class="d-flex flex-column gap-2">
           <%= link_to 'Home', root_path, class: 'text-muted text-decoration-none' %>
@@ -10,16 +10,11 @@
         </div>
       </div>
 
-      <div class="col-6 col-md-4 mb-3">
+      <div class="col-6 col-md-6 mb-3">
         <h5 class="text-body-secondary mb-2">Conta</h5>
         <div class="d-flex flex-column gap-2">
-          <% if user_signed_in? %>
-            <%= link_to 'Meus Contatos', contacts_path, class: 'text-muted text-decoration-none' %>
-            <%= button_to 'Sair', sair_path, method: :delete, class: 'text-muted text-decoration-none btn btn-link p-0 text-start' %>
-          <% else %>
-            <%= link_to 'Entrar', entrar_path, class: 'text-muted text-decoration-none' %>
-            <%= link_to 'Cadastrar', cadastro_path, class: 'text-muted text-decoration-none' %>
-          <% end %>
+          <%= link_to 'Meus Contatos', contacts_path, class: 'text-muted text-decoration-none' %>
+          <%= button_to 'Sair', sair_path, method: :delete, class: 'text-muted text-decoration-none btn btn-link p-0 text-start' %>
         </div>
       </div>
     </div>
