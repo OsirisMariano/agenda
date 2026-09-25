@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.7  
+**Versão:** 0.8  
 **Data:** Setembro 2026  
-**Status:** Lançamento Inicial (v0.7 - Campos extras no contato)
+**Status:** Lançamento Inicial (v0.8 - Saneamento do legado)
 
 ---
 
@@ -271,7 +271,7 @@ end
 ### 7.1 Layout Principal (`layouts/application.html.erb`)
 - **Header:** Navbar Bootstrap com logo, links de navegação e dropdown do usuário
 - **Flash Messages:** Alertas de sucesso/erro com auto-dismiss
-- **Footer:** Links de navegação, newsletter (mock), redes sociais
+- **Footer:** Links de navegação (Home, Contatos, Sobre) e de conta (Meus Contatos, Sair) + copyright — renderizado apenas para usuário logado (mesma condição do header)
 - **Loading State:** Spinner em botões durante submissão de formulários
 
 ### 7.2 Design System
@@ -374,17 +374,17 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **80 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **93 exemplos, 0 falhas**
 - **Testes de model:**
   - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
-  - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca)
+  - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca, campos extras)
 - **Testes de controller:**
   - `users_controller_spec.rb` (cadastro, autorização de admin)
   - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
-  - `contacts_controller_spec.rb` (CRUD, paginação, busca, isolamento por usuário)
-- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente)
+  - `contacts_controller_spec.rb` (CRUD, `show`, paginação, busca, campos extras, isolamento por usuário)
+- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas)
 - **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo)
-- **Testes de feature:** `authentication_spec.rb` e `password_reset_spec.rb` (solicitação, link no e-mail e redefinição com novo login, `rack_test`)
+- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb`, `password_reset_spec.rb` (CRUD completo, campos extras, paginação) e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
 - **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
@@ -416,14 +416,15 @@ O arquivo `db/seeds.rb` cria:
 
 ### 12.2 Funcionalidades Incompletas
 1. ✅ **Recuperação de senha:** Implementada em v0.5 (token + digest + e-mail com `letter_opener` em dev, link `/recuperar-senha/edit`, expiração de 2h, mensagens genéricas) — **resolvido em v0.5**
-2. **Newsletter:** Formulário no footer é mock (não funcional)
-3. **Redes sociais:** Links no footer são `#` (placeholder)
+2. ✅ **Newsletter:** Formulário mock removido do footer (não havia backend nem previsão no roadmap) — **resolvido em v0.8**
+3. ✅ **Redes sociais:** Links `#` (placeholder) removidos do footer — **resolvido em v0.8**
+4. ✅ **Links "Ajuda"/"Privacidade":** Eram placeholders `#`; removidos do footer (páginas não existem no escopo do produto) — **resolvido em v0.8**
 
 ### 12.3 Problemas no Repositório
 - ✅ **Arquivo `core`:** Removido do repositório (não mais presente) — **resolvido em v0.2**
 - ✅ **Arquivo `views`:** Removido do repositório (saída acidental do `rails generate devise`) — **resolvido em v0.3**
 - ✅ **Arquivo `test_hook.rb`:** Removido do repositório (resquício de configuração) — **resolvido em v0.3**
-- **Traduções Devise:** `devise.en.yml` existe mas Devise não está em uso
+- ✅ **Traduções Devise:** `devise.en.yml` removido (Devise não está no Gemfile e não há uso no app) — **resolvido em v0.8**
 
 ### 12.4 Melhorias Sugeridas
 - ✅ Implementar password reset real — **concluído em v0.5**
@@ -434,7 +435,8 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
 - ✅ Remover arquivos desnecessários do repositório (`views`, `test_hook.rb`) — **concluído em v0.3**
-- Rodar rubocop no código legado (migrations antigas com offenses pré-existentes)
+- ✅ Rodar rubocop no código legado (migrations antigas com offenses pré-existentes) — **concluído em v0.3/v0.4** (CHORE-04: lint zerado com exclusão cirúrgica de `Rails/BulkChangeTable` em `db/migrate/**/*`)
+- ✅ Sanear o legado: remover `devise.en.yml` e os mocks do footer — **concluído em v0.8**
 - Rate limit via `:memory_store` é por processo Puma — em deploy multi-worker, migrar para store compartilhado (Redis) na US08
 
 ---
@@ -460,6 +462,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.8 | Set 2026 | **Saneamento do legado (US05)**: remoção de `config/locales/devise.en.yml` (Devise fora do Gemfile e sem uso), footer enxuto (removidos o formulário mock de newsletter, os 3 ícones de redes sociais com `href="#"`, os links "Ajuda"/"Privacidade" e o bloco `<% else %>` inalcançável — o footer só é renderizado para usuário logado; colunas rebalanceadas para `col-6 col-md-6` e barra inferior simplificada para copyright), spec de feature do rodapé (`spec/features/footer_spec.rb`) garantindo ausência de `a[href="#"]` e de mocks, **93 exemplos**. PRD §7.1, §10.1, §12.2, §12.3, §12.4 atualizados. |
 | 0.7 | Set 2026 | **Campos extras no contato**: migration aditiva e reversível `email`/`address`/`notes` (nullable) em `contacts`, validações de formato (e-mail) e tamanho, e-mail incluído no scope de busca, strong params atualizados, view `show` de contato e parcial `_form` compartilhado, locals pt-BR atualizados, **91 exemplos** (model, controller, feature). PRD §4.2, §5.1, §5.2 atualizados. |
 | 0.6 | Ago 2026 | **Rate limit no login**: gem `rack-attack`, middleware + initializer (`config/initializers/rack_attack.rb`, 5 tentativas/IP/min em `POST /entrar`, resposta 429 pt-BR), `Rack::Attack.throttled_responder`, store fresco por exemplo nos specs, **80 exemplos** (request specs: bloqueio 429, liberação da janela, não-afetamento de rotas) |
 | 0.5 | Ago 2026 | **Recuperação de senha por e-mail**: rotas `/recuperar-senha*`, `PasswordResetsController`, `UserMailer#password_reset` (assunto pt-BR), views `password_reset.{html,text}` e `password_resets/{new,edit}`, token+digest com expiração de 2h, link "Esqueci minha senha?" no login, `letter_opener` em dev, mensagens genéricas, **77 exemplos** (models, mailers, requests, features) |
@@ -471,4 +474,4 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 ---
 
 **Arquivo gerado por:** opencode/big-pickle  
-**Atualizado:** 24 de Setembro de 2026
+**Atualizado:** 25 de Setembro de 2026
