@@ -66,4 +66,14 @@ RSpec.describe("Contatos", type: :feature) do
 
     expect(page).to(have_selector(".pagination"))
   end
+
+  it "oferece a exportação de contatos em CSV na listagem" do
+    visit entrar_path
+    fill_in "E-mail", with: user.email
+    fill_in "Senha", with: "123456"
+    click_on "Entrar"
+    click_on "Ver Meus Contatos"
+
+    expect(page).to(have_link("Exportar (CSV)", href: exportar_contacts_path))
+  end
 end

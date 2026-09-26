@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.8  
+**Versão:** 0.9  
 **Data:** Setembro 2026  
-**Status:** Lançamento Inicial (v0.8 - Saneamento do legado)
+**Status:** Em desenvolvimento (v0.9 - Exportação de contatos em CSV)
 
 ---
 
@@ -166,6 +166,20 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 - **Specs:** `spec/requests/rack_attack_spec.rb` cobre bloqueio (429), liberação após a janela de 1 min e não-afetamento de outras rotas
 - **Débito documentado:** `:memory_store` é por processo — com múltiplos workers Puma o limite vale por processo (§12.4, revisitar junto da US08)
 
+### 4.6 Exportação de Contatos (CSV) 📤 (US06 — PR-A)
+
+- **Rota:** `GET /contacts/exportar` → `contacts#export` (`on: :collection`, helper `exportar_contacts_path`)
+- **Serviço:** `ContactsCsvExporter` (`app/services/contacts_csv_exporter.rb`) — PORO sem ActiveModel, recebe a relação de contatos e devolve a String do arquivo. Isolar a geração permite testá-la sem HTTP e fixa o **contrato de cabeçalho** que o import (PR-B) vai espelhar
+- **Colunas:** `nome,telefone,e-mail,endereço,notas` — os 5 campos do contato (US04), na ordem do model
+- **Escopo:** `current_user.contacts.order(:name)` — a exportação **ignora a paginação (Pagy) e o filtro `?q=`**, entregando todos os contatos do usuário de uma vez
+- **BOM UTF-8:** prefixo `\xEF\xBB\xBF` no arquivo, sem o qual o Excel abre os acentos quebrados
+- **Resposta:** `send_data` com `type: "text/csv; charset=utf-8"` e `Content-Disposition: attachment` nomeado `contatos-AAAAMM-DD.csv`
+- **Gerado sob demanda:** o arquivo **nunca é gravado no servidor** (RN05) — só existe em memória durante a resposta
+- **Autorização:** coberta pelo `before_action :require_logged_in_user` já existente; sem sessão, redireciona para `/entrar` (Cenário 5)
+- **Usuário sem contatos:** responde apenas a linha de cabeçalho, sem erro
+- **Escaping:** `CSV.generate` entre aspas automaticamente valores com vírgula, aspas ou quebra de linha (o campo `notes` aceita quebra de linha) — o round-trip do PR-B depende disso
+- **Fora de escopo (v1):** vCard (`.vcf`), PDF, sincronização com Google Sheets. A **importação** é o PR-B da US06
+
 ---
 
 ## 5. Modelo de Dados
@@ -254,6 +268,7 @@ end
 | POST | `/users` | users#create | - |
 | GET | `/usuarios` | users#index | - |
 | GET | `/contacts` | contacts#index | contacts_path |
+| GET | `/contacts/exportar` | contacts#export | exportar_contacts_path |
 | GET | `/contacts/new` | contacts#new | new_contact_path |
 | POST | `/contacts` | contacts#create | contacts_path |
 | GET | `/contacts/:id/edit` | contacts#edit | edit_contact_path |
@@ -291,6 +306,7 @@ end
 #### Lista de Contatos (`contacts/index.html.erb`)
 - Barra de busca com ordenação
 - Contador de contatos
+- Botão "Exportar (CSV)" (`btn-outline-success`, ícone `bi-download`) ao lado do "Novo Contato" — visível apenas para usuário logado
 - Grid de cards com avatar, nome, telefone
 - Ações: Editar e Excluir por contato
 - Estado vazio: mensagem motivacional + CTA
@@ -374,7 +390,7 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **93 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **112 exemplos, 0 falhas**
 - **Testes de model:**
   - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
   - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca, campos extras)
@@ -382,9 +398,10 @@ bundle exec rubocop
   - `users_controller_spec.rb` (cadastro, autorização de admin)
   - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
   - `contacts_controller_spec.rb` (CRUD, `show`, paginação, busca, campos extras, isolamento por usuário)
-- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas)
+- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos)
+- **Testes de serviço:** `spec/services/contacts_csv_exporter_spec.rb` (cabeçalho, uma linha por contato, campos opcionais, escaping de vírgula/aspas/quebra de linha, acentos em UTF-8, BOM, separador, ordem preservada)
 - **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo)
-- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb`, `password_reset_spec.rb` (CRUD completo, campos extras, paginação) e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
+- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
 - **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
@@ -438,6 +455,8 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Rodar rubocop no código legado (migrations antigas com offenses pré-existentes) — **concluído em v0.3/v0.4** (CHORE-04: lint zerado com exclusão cirúrgica de `Rails/BulkChangeTable` em `db/migrate/**/*`)
 - ✅ Sanear o legado: remover `devise.en.yml` e os mocks do footer — **concluído em v0.8**
 - Rate limit via `:memory_store` é por processo Puma — em deploy multi-worker, migrar para store compartilhado (Redis) na US08
+- **Injeção de fórmula no CSV:** campos initiados por `=`, `+`, `-` ou `@` podem ser executados como fórmula ao abrir o arquivo no Excel/Sheets. **Não tratado no export (v0.9)** de propósito: o prefixo de escape (`'`) corromperia a fidelidade do round-trip, e o vetor de entrada nasce na importação (PR-B da US06) — CSV vindo de terceiros. Resolver na US06/PR-B normalizando o valor no parse
+- **Importação de contatos (CSV):** entregada no PR-B da US06 (§4.7) — em aberto
 
 ---
 
@@ -449,6 +468,7 @@ O projeto **Agenda** entrega um sistema funcional de gestão de contatos com:
 - ✅ Interface responsiva com Bootstrap 5
 - ✅ Busca e ordenação de contatos
 - ✅ Campos extras no contato (e-mail, endereço e notas)
+- ✅ Exportação de contatos em CSV (BOM UTF-8, escopo por usuário, gerado sob demanda)
 - ✅ Privacidade garantida (usuários veem apenas seus dados)
 - ✅ Proteção contra brute-force no login (rate limit rack-attack)
 - ✅ Deploy via Docker configurado
@@ -462,6 +482,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.9 | Set 2026 | **Exportação de contatos em CSV (US06 — PR-A)**: serviço `ContactsCsvExporter` (`app/services/contacts_csv_exporter.rb`, primeiro diretório de services do projeto) com o contrato de cabeçalho `nome,telefone,e-mail,endereço,notas`, BOM UTF-8 para o Excel, escaping automático de vírgula/aspas/quebra de linha; rota `GET /contacts/exportar` (`contacts#export`, `on: :collection`) servindo `send_data` como anexo `contatos-AAAAMM-DD.csv`; escopo por usuário via `current_user.contacts.order(:name)` **ignorando paginação e filtro de busca**; botão "Exportar (CSV)" na listagem; specs de serviço, request e feature, **112 exemplos** (de 93). PRD §4.6, §6, §7.3, §10.1, §12.4 e §13 atualizados. A importação é o PR-B da US06. |
 | 0.8 | Set 2026 | **Saneamento do legado (US05)**: remoção de `config/locales/devise.en.yml` (Devise fora do Gemfile e sem uso), footer enxuto (removidos o formulário mock de newsletter, os 3 ícones de redes sociais com `href="#"`, os links "Ajuda"/"Privacidade" e o bloco `<% else %>` inalcançável — o footer só é renderizado para usuário logado; colunas rebalanceadas para `col-6 col-md-6` e barra inferior simplificada para copyright), spec de feature do rodapé (`spec/features/footer_spec.rb`) garantindo ausência de `a[href="#"]` e de mocks, **93 exemplos**. PRD §7.1, §10.1, §12.2, §12.3, §12.4 atualizados. |
 | 0.7 | Set 2026 | **Campos extras no contato**: migration aditiva e reversível `email`/`address`/`notes` (nullable) em `contacts`, validações de formato (e-mail) e tamanho, e-mail incluído no scope de busca, strong params atualizados, view `show` de contato e parcial `_form` compartilhado, locals pt-BR atualizados, **91 exemplos** (model, controller, feature). PRD §4.2, §5.1, §5.2 atualizados. |
 | 0.6 | Ago 2026 | **Rate limit no login**: gem `rack-attack`, middleware + initializer (`config/initializers/rack_attack.rb`, 5 tentativas/IP/min em `POST /entrar`, resposta 429 pt-BR), `Rack::Attack.throttled_responder`, store fresco por exemplo nos specs, **80 exemplos** (request specs: bloqueio 429, liberação da janela, não-afetamento de rotas) |
