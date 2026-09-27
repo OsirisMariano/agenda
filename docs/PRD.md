@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.9  
+**Versão:** 0.10  
 **Data:** Setembro 2026  
-**Status:** Em desenvolvimento (v0.9 - Exportação de contatos em CSV)
+**Status:** Em desenvolvimento (v0.10 - Exportação e importação de contatos em CSV)
 
 ---
 
@@ -178,7 +178,24 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
 - **Autorização:** coberta pelo `before_action :require_logged_in_user` já existente; sem sessão, redireciona para `/entrar` (Cenário 5)
 - **Usuário sem contatos:** responde apenas a linha de cabeçalho, sem erro
 - **Escaping:** `CSV.generate` entre aspas automaticamente valores com vírgula, aspas ou quebra de linha (o campo `notes` aceita quebra de linha) — o round-trip do PR-B depende disso
-- **Fora de escopo (v1):** vCard (`.vcf`), PDF, sincronização com Google Sheets. A **importação** é o PR-B da US06
+- **Fora de escopo (v1):** vCard (`.vcf`), PDF, sincronização com Google Sheets. A **importação** é o PR-B da US06 (§4.7)
+
+### 4.7 Importação de Contatos (CSV) 📥 (US06 — PR-B)
+
+Fecha a US06 e completa o par bidirecional do §4.6: o usuário exporta, sai da plataforma e traz de volta.
+
+- **Rota:** `POST /contacts/importar` → `contacts#import` (`on: :collection`, helper `importar_contacts_path`, `multipart/form-data`, campo `arquivo`)
+- **Serviço:** `ContactsCsvImporter` (`app/services/contacts_csv_importer.rb`) — espelha o `ContactsCsvExporter`: recebe `user:` e `file:` e devolve um `Result` (`total`, `imported`, `errors`) ou levanta `InvalidFile` com mensagem já exibível
+- **Cabeçalho:** exige as colunas `nome` e `telefone`; `e-mail`, `endereço` e `notas` são opcionais e colunas desconhecidas são ignoradas (compatível com Google Contatos). O cabeçalho é normalizado (minúsculo, sem acento, sem espaço/hífen), então `NOME`, `E-mail` e `email` caem na mesma coluna
+- **Validação linha a linha:** cada linha vira `current_user.contacts.build(...)` e é salva pelo **próprio model** — o import não duplica regra de negócio, ele reaproveita as validações do `Contact` (telefone, unicidade por usuário, e-mail, tamanhos)
+- **Relatório de erros:** `LineError` (linha, campo em pt-BR, mensagem do model) renderizado na listagem como `Linha 4: telefone inválido. Use o formato (XX) XXXXX-XXXX.` A **linha 1 é o cabeçalho**, então o primeiro dado é a linha 2 — o mesmo número que o usuário vê na planilha
+- **Linhas válidas não são descartadas por causa das inválidas (RN04):** o `index` volta renderizado com **HTTP 422** (`unprocessable_entity`) e o flash resume `3 de 4 linhas entraram. Veja o que ficou de fora.`
+- **Idempotência e segurança (RN01/RN02):** cada linha cria um contato **novo** — nada é sobrescrito ou apagado; telefone repetido (no arquivo ou já cadastrado) é **erro reportado**, nunca sucesso silencioso, porque a unicidade do model é por `user_id`
+- **Escopo (RN03):** os contatos nascem em `current_user.contacts`; o mesmo telefone pode existir em contas diferentes
+- **Guardrails:** limite de **5 MB** conferido **antes da leitura** (`ContactsCsvImporter::MAX_SIZE`), encoding **UTF-8 obrigatório** (o tempfile chega em binário e é convertido antes do parse, senão o BOM e os acentos quebram), arquivo vazio, CSV malformado, ausência das colunas obrigatórias e "nenhum arquivo escolhido" viram recusa com mensagem clara
+- **Injeção de fórmula neutralizada (§12.4):** valor de célula começando com `=`, `+`, `-`, `@`, tab ou CR recebe o prefixo `'` no parse — vetor de entrada do CSV de terceiros. Valor já escapado não recebe um segundo prefixo, preservando o round-trip
+- **UI:** card "Importar contatos (CSV)" na listagem com input de arquivo, dica das colunas e do limite, e o alerta de erros logo abaixo
+- **Fora de escopo (v1):** vCard (`.vcf`), mapeamento de colunas por tela, escolha de como tratar duplicados (hoje: sempre erro) e importação em lote de arquivos
 
 ---
 
@@ -269,6 +286,7 @@ end
 | GET | `/usuarios` | users#index | - |
 | GET | `/contacts` | contacts#index | contacts_path |
 | GET | `/contacts/exportar` | contacts#export | exportar_contacts_path |
+| POST | `/contacts/importar` | contacts#import | importar_contacts_path |
 | GET | `/contacts/new` | contacts#new | new_contact_path |
 | POST | `/contacts` | contacts#create | contacts_path |
 | GET | `/contacts/:id/edit` | contacts#edit | edit_contact_path |
@@ -307,6 +325,8 @@ end
 - Barra de busca com ordenação
 - Contador de contatos
 - Botão "Exportar (CSV)" (`btn-outline-success`, ícone `bi-download`) ao lado do "Novo Contato" — visível apenas para usuário logado
+- Card "Importar contatos (CSV)": input de arquivo (`accept: .csv,text/csv`), dica das colunas e do limite de 5 MB, botão "Importar" — sempre visível (sem JavaScript) para o usuário logado
+- Alerta de erros da importação (`alert-danger`) abaixo do card, listando `Linha N: campo mensagem` para cada linha recusada, com a promessa explícita de que nada foi sobrescrito
 - Grid de cards com avatar, nome, telefone
 - Ações: Editar e Excluir por contato
 - Estado vazio: mensagem motivacional + CTA
@@ -390,7 +410,7 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **112 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **161 exemplos, 0 falhas**
 - **Testes de model:**
   - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
   - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca, campos extras)
@@ -398,10 +418,10 @@ bundle exec rubocop
   - `users_controller_spec.rb` (cadastro, autorização de admin)
   - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
   - `contacts_controller_spec.rb` (CRUD, `show`, paginação, busca, campos extras, isolamento por usuário)
-- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos)
-- **Testes de serviço:** `spec/services/contacts_csv_exporter_spec.rb` (cabeçalho, uma linha por contato, campos opcionais, escaping de vírgula/aspas/quebra de linha, acentos em UTF-8, BOM, separador, ordem preservada)
+- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos) + `contacts_import_spec.rb` (**import CSV**: ida e volta exportar→importar, relatório linha+campo, preservação de linhas válidas com inválida no meio, RN01/RN02/RN03, guardrails de 5 MB, encoding, colunas obrigatórias)
+- **Testes de serviço:** `spec/services/contacts_csv_exporter_spec.rb` (cabeçalho, uma linha por contato, campos opcionais, escaping de vírgula/aspas/quebra de linha, acentos em UTF-8, BOM, separador, ordem preservada) + `spec/services/contacts_csv_importer_spec.rb` (parse normalizado, BOM ignorado, linhas em branco, reaproveita validações do model, duplicidade, acumulado de erros, arquivo só com cabeçalho, **neutralização de injeção de fórmula**)
 - **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo)
-- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
+- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**, **upload de CSV**, **relatório de erros na tela**, recusa de arquivo inválido), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
 - **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
@@ -448,6 +468,8 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Adicionar paginação na listagem de contatos (Pagy, 12/página) — **concluído em v0.3**
 - ✅ Adicionar proteção contra brute-force no login (rack-attack, 5 tentativas/IP/min) — **concluído em v0.6**
 - ✅ Adicionar campos adicionais (e-mail, endereço e notas) aos contatos — **concluído em v0.7**
+- ✅ Exportar contatos em CSV — **concluído em v0.9**
+- ✅ Importar contatos em CSV (round-trip, relatório de erros, RN01–RN04) — **concluído em v0.10**
 - Implementar busca full-text
 - ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
@@ -455,8 +477,8 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Rodar rubocop no código legado (migrations antigas com offenses pré-existentes) — **concluído em v0.3/v0.4** (CHORE-04: lint zerado com exclusão cirúrgica de `Rails/BulkChangeTable` em `db/migrate/**/*`)
 - ✅ Sanear o legado: remover `devise.en.yml` e os mocks do footer — **concluído em v0.8**
 - Rate limit via `:memory_store` é por processo Puma — em deploy multi-worker, migrar para store compartilhado (Redis) na US08
-- **Injeção de fórmula no CSV:** campos initiados por `=`, `+`, `-` ou `@` podem ser executados como fórmula ao abrir o arquivo no Excel/Sheets. **Não tratado no export (v0.9)** de propósito: o prefixo de escape (`'`) corromperia a fidelidade do round-trip, e o vetor de entrada nasce na importação (PR-B da US06) — CSV vindo de terceiros. Resolver na US06/PR-B normalizando o valor no parse
-- **Importação de contatos (CSV):** entregada no PR-B da US06 (§4.7) — em aberto
+- **Injeção de fórmula no CSV:** **resolvida no PR-B da US06 (v0.10)** — o vetor nasce no CSV de terceiros, então a mitigação ficou no parse: `ContactsCsvImporter#sanitize_formula` prefixa `'` em valores iniciados por `= + - @` (e tab/CR), sem prefixar de novo quando o valor já vem escapado (round-trip exportar→importar→exportar preservado)
+- **Importação de contatos (CSV):** **concluída no PR-B da US06** (§4.7) — relatório linha+campo, guardrails de tamanho/encoding, RN01–RN04
 
 ---
 
@@ -469,6 +491,7 @@ O projeto **Agenda** entrega um sistema funcional de gestão de contatos com:
 - ✅ Busca e ordenação de contatos
 - ✅ Campos extras no contato (e-mail, endereço e notas)
 - ✅ Exportação de contatos em CSV (BOM UTF-8, escopo por usuário, gerado sob demanda)
+- ✅ Importação de contatos em CSV (round-trip sem aprisionamento, relatório linha+campo, RN01–RN04, injeção de fórmula neutralizada)
 - ✅ Privacidade garantida (usuários veem apenas seus dados)
 - ✅ Proteção contra brute-force no login (rate limit rack-attack)
 - ✅ Deploy via Docker configurado
@@ -482,6 +505,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.10 | Set 2026 | **Importação de contatos em CSV (US06 — PR-B)**: rota `POST /contacts/importar` com campo `arquivo` (multipart) e serviço `ContactsCsvImporter` — cabeçalho pt-BR normalizado (minúsculo/sem acento/sem hífen, colunas desconhecidas ignoradas), BOM ignorado, linhas em branco puladas, exigência das colunas `nome` e `telefone`; **validação linha a linha reaproveitando as validações do model** (nenhuma regra duplicada) com relatório `Linha N: campo mensagem`; **HTTP 422** com o `index` re-renderizado e o resumo `3 de 4 linhas entraram. Veja o que ficou de fora.`; **RN01–RN04** (nunca sobrescreve/apaga, telefone duplicado é erro reportado, escopo em `current_user.contacts`); guardrails de **5 MB** (checado antes da leitura) e **UTF-8 obrigatório** (tempfile binário convertido antes do parse); **injeção de fórmula neutralizada** (`= + - @ \t \r` recebem prefixo `'`, sem duplicar quando já escapado — dívida que o §12.4 havia delegated ao PR-B); card de upload na listagem + alerta de erros; extração de `load_contacts` no controller para o `index` e o relatório compartilharem a mesma montagem; specs de serviço (32), request (14) e feature, incluindo **round-trip exportar→importar em outra conta**, **161 exemplos** (de 112). PRD §4.7, §6, §7.3, §10.1, §12.4 e §13 atualizados. US06 concluída. |
 | 0.9 | Set 2026 | **Exportação de contatos em CSV (US06 — PR-A)**: serviço `ContactsCsvExporter` (`app/services/contacts_csv_exporter.rb`, primeiro diretório de services do projeto) com o contrato de cabeçalho `nome,telefone,e-mail,endereço,notas`, BOM UTF-8 para o Excel, escaping automático de vírgula/aspas/quebra de linha; rota `GET /contacts/exportar` (`contacts#export`, `on: :collection`) servindo `send_data` como anexo `contatos-AAAAMM-DD.csv`; escopo por usuário via `current_user.contacts.order(:name)` **ignorando paginação e filtro de busca**; botão "Exportar (CSV)" na listagem; specs de serviço, request e feature, **112 exemplos** (de 93). PRD §4.6, §6, §7.3, §10.1, §12.4 e §13 atualizados. A importação é o PR-B da US06. |
 | 0.8 | Set 2026 | **Saneamento do legado (US05)**: remoção de `config/locales/devise.en.yml` (Devise fora do Gemfile e sem uso), footer enxuto (removidos o formulário mock de newsletter, os 3 ícones de redes sociais com `href="#"`, os links "Ajuda"/"Privacidade" e o bloco `<% else %>` inalcançável — o footer só é renderizado para usuário logado; colunas rebalanceadas para `col-6 col-md-6` e barra inferior simplificada para copyright), spec de feature do rodapé (`spec/features/footer_spec.rb`) garantindo ausência de `a[href="#"]` e de mocks, **93 exemplos**. PRD §7.1, §10.1, §12.2, §12.3, §12.4 atualizados. |
 | 0.7 | Set 2026 | **Campos extras no contato**: migration aditiva e reversível `email`/`address`/`notes` (nullable) em `contacts`, validações de formato (e-mail) e tamanho, e-mail incluído no scope de busca, strong params atualizados, view `show` de contato e parcial `_form` compartilhado, locals pt-BR atualizados, **91 exemplos** (model, controller, feature). PRD §4.2, §5.1, §5.2 atualizados. |
@@ -495,4 +519,4 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 ---
 
 **Arquivo gerado por:** opencode/big-pickle  
-**Atualizado:** 25 de Setembro de 2026
+**Atualizado:** 27 de Setembro de 2026
