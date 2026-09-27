@@ -15,5 +15,5 @@ Leia `AGENTS.md` na raiz e siga-o como autoridade. Convenções críticas do rep
 - **Paginação:** Pagy, 12/página, overflow para última página.
 - **Telefone:** formato BR validado por `Contact::PHONE_REGEX` `(XX) XXXXX-XXXX` (prefixo internacional opcional, DDD obrigatório).
 - **Rate limit:** rack-attack 5 tentativas/1min em `POST /entrar`; nos specs o `rails_helper` já troca o store.
-- **Docs:** toda feature atualiza `docs/PRD.md` (seção correspondente + histórico de versões) e `docs/backlog.md` na MESMA PR; cobertura não regride de 91 exemplos.
+- **Docs:** toda feature atualiza `docs/PRD.md` (seção correspondente + histórico de versões) e `docs/backlog.md` na MESMA PR; cobertura não regride de 112 exemplos.
 - **Workflow:** sempre confirme `bundle exec rubocop` e `RAILS_ENV=test bundle exec rspec` antes de considerar um PR pronto.

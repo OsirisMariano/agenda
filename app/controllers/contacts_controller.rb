@@ -20,6 +20,16 @@ class ContactsController < ApplicationController
     @contact = Contact.new
   end
 
+  # Exporta todos os contatos do usuário logado, ignorando a paginação
+  # (RN03 — a exportação só enxerga os contatos de quem exporta).
+  def export
+    send_data(
+      ContactsCsvExporter.new(current_user.contacts.order(:name)).to_csv,
+      filename: "contatos-#{Date.current.strftime("%Y-%m-%d")}.csv",
+      type: "text/csv; charset=utf-8",
+    )
+  end
+
   def edit; end
 
   def create
