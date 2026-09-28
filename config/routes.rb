@@ -20,6 +20,9 @@ Rails.application.routes.draw do
   get "recuperar-senha/edit", to: "password_resets#edit", as: "edit_recuperar_senha"
   patch "recuperar-senha", to: "password_resets#update"
 
-  resources :contacts, only: [:index, :show, :new, :create, :edit, :update, :destroy]
+  resources :contacts, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+    get "exportar", to: "contacts#export", on: :collection
+    post "importar", to: "contacts#import", on: :collection
+  end
   resources :users, only: [:index, :create]
 end
