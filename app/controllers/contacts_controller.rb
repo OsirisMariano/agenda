@@ -5,11 +5,7 @@ class ContactsController < ApplicationController
   before_action :set_contact, only: [:show, :edit, :update, :destroy]
 
   def index
-    @contacts = current_user.contacts
-    @contacts = @contacts.search(params[:q]) if params[:q].present?
-    @contacts = @contacts.order(sort_column => :asc)
-
-    @pagy, @contacts = pagy(@contacts)
+    load_contacts
   end
 
   def show
@@ -28,6 +24,26 @@ class ContactsController < ApplicationController
       filename: "contatos-#{Date.current.strftime("%Y-%m-%d")}.csv",
       type: "text/csv; charset=utf-8",
     )
+  end
+
+  # Importa os contatos de um CSV. As linhas válidas entram e as inválidas
+  # voltam em tela como relatório, com linha e campo (RN04) — nada do que já
+  # existia é sobrescrito (RN01).
+  def import
+    result = ContactsCsvImporter.new(user: current_user, file: params[:arquivo]).call
+
+    if result.any_errors?
+      @import_result = result
+      load_contacts
+      flash.now[:alert] = "#{result.imported} de #{result.total} linhas entraram. Veja o que ficou de fora."
+      render(:index, status: :unprocessable_entity)
+    elsif result.total.zero?
+      redirect_to(contacts_path, alert: "O arquivo não tem nenhum contato para importar.")
+    else
+      redirect_to(contacts_path, notice: imported_notice(result.imported))
+    end
+  rescue ContactsCsvImporter::InvalidFile => e
+    redirect_to(contacts_path, alert: e.message)
   end
 
   def edit; end
@@ -56,6 +72,20 @@ class ContactsController < ApplicationController
   end
 
   private
+
+  def load_contacts
+    @contacts = current_user.contacts
+    @contacts = @contacts.search(params[:q]) if params[:q].present?
+    @contacts = @contacts.order(sort_column => :asc)
+
+    @pagy, @contacts = pagy(@contacts)
+  end
+
+  def imported_notice(count)
+    noun = count == 1 ? "contato importado" : "contatos importados"
+
+    "#{count} #{noun} com sucesso!"
+  end
 
   def sort_column
     params[:sort].in?(["name", "created_at"]) ? params[:sort] : "name"

@@ -22,6 +22,7 @@ Rails.application.routes.draw do
 
   resources :contacts, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
     get "exportar", to: "contacts#export", on: :collection
+    post "importar", to: "contacts#import", on: :collection
   end
   resources :users, only: [:index, :create]
 end

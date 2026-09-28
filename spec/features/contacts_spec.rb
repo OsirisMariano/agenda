@@ -76,4 +76,49 @@ RSpec.describe("Contatos", type: :feature) do
 
     expect(page).to(have_link("Exportar (CSV)", href: exportar_contacts_path))
   end
+
+  it "importa contatos de um arquivo CSV pela tela" do
+    visit entrar_path
+    fill_in "E-mail", with: user.email
+    fill_in "Senha", with: "123456"
+    click_on "Entrar"
+    click_on "Ver Meus Contatos"
+
+    attach_file("Arquivo CSV", file_fixture("contatos.csv"))
+    click_on "Importar"
+
+    expect(page).to(have_content("2 contatos importados com sucesso!"))
+    expect(page).to(have_content("Carla Dias"))
+    expect(page).to(have_content("João Coração"))
+  end
+
+  it "mostra o relatório de erros linha a linha e mantém as linhas válidas" do
+    visit entrar_path
+    fill_in "E-mail", with: user.email
+    fill_in "Senha", with: "123456"
+    click_on "Entrar"
+    click_on "Ver Meus Contatos"
+
+    attach_file("Arquivo CSV", file_fixture("contatos_com_erro.csv"))
+    click_on "Importar"
+
+    expect(page).to(have_content("3 de 4 linhas entraram. Veja o que ficou de fora."))
+    expect(page).to(have_content("Linha 4: telefone inválido. Use o formato (XX) XXXXX-XXXX."))
+    expect(page).to(have_content("Carla Dias"))
+    expect(page).to(have_content("Zilda Ramos"))
+    expect(page).not_to(have_content("Contato Sem Telefone"))
+  end
+
+  it "recusa um arquivo que não é a lista de contatos" do
+    visit entrar_path
+    fill_in "E-mail", with: user.email
+    fill_in "Senha", with: "123456"
+    click_on "Entrar"
+    click_on "Ver Meus Contatos"
+
+    attach_file("Arquivo CSV", file_fixture("contatos_invalido.csv"))
+    click_on "Importar"
+
+    expect(page).to(have_content("O arquivo precisa ter as colunas: nome, telefone."))
+  end
 end
