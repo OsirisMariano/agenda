@@ -1,9 +1,9 @@
 # Backlog do Produto — Agenda
 
-**Versão:** 1.5
+**Versão:** 1.6
 **Data:** Setembro 2026
-**Fonte:** PRD v0.10 + Avaliação do Product Owner
-**Ferramenta de gestão sugerida:** GitHub Projects (Board)
+**Fonte:** PRD v0.11 + Avaliação do Product Owner
+**Ferramenta de gestão:** GitHub Projects (Board #65 — "Agenda — Backlog") + milestone "P2 — Roadmap"
 
 ---
 
@@ -13,25 +13,33 @@
 |----------|------|------------|
 | **Valor entregue** | ★★★★☆ | Problema central resolvido: CRUD privado de contatos com busca/ordenação/paginação |
 | **Qualidade técnica** | ★★★★☆ | 161 specs verdes, isolamento por usuário correto, strong params, Docker ok |
-| **Documentação** | ★★★★★ | PRD v0.10 alinhado ao código, histórico de versões disciplinado |
-| **Segurança** | ★★★★☆ | Recuperação de senha, rate limit e CI em place; falta confirmação de e-mail (US09) |
+| **Documentação** | ★★★★★ | PRD v0.11 alinhado ao código, histórico de versões disciplinado |
+| **Segurança** | ★★★★☆ | Recuperação de senha, rate limit e CI em place; falta confirmação de e-mail (US09). Risco de EOL da stack aceito e documentado (PRD §8.5) |
 | **Infra/CI** | ★★★★☆ | GitHub Actions (rspec + rubocop) verde nos PRs desde v0.4 |
 | **Débito técnico** | Baixo | Legado saneado em v0.8 (sem resíduo Devise, sem mocks de UI) |
 
 **Risco principal:** usuário que perde os dados fica preso à plataforma — mitigado pela US06 (exportar/importar).
 **Risco secundário:** sem confirmação de e-mail, contas falsas são fáceis de criar — endereçado pela US09 (P2).
+**Risco aceito (novo):** Rails 7.0.8.6 e PostgreSQL 12.3 estão fora de suporte oficial. Decisão de stack congelada, pois o projeto é legado/educacional — registrado no PRD §8.5.
 
-> **Atualização (set/2026, v1.5):** US06 **concluída** (issue #29) — o PR-A entregou o export (v0.9) e o PR-B entregou o import (v0.10): round-trip exportar→importar, relatório de erros com linha e campo, RN01–RN04, guardrails de 5 MB/UTF-8 e injeção de fórmula neutralizada no parse. **P0 e P1 estão 100% entregues**; falta apenas o release v0.10 e a abertura do ciclo P2. Base verde: **161 exemplos**.
+> **Atualização (set/2026, v1.6):** **Ciclo P1 encerrado e P2 aberto.** A release **v0.10** foi promovida (PR #48, 28/09, `Closes #29`) — a US06 está **100% entregue** e não há mais item de P0 ou P1 pendente. A auditoria entre este arquivo e o board #65 revelou quatro divergências, todas corrigidas no **CHORE-05 (#49)**:
 >
-> **Atualização (set/2026, v1.4):** US06 (issue #29) iniciada — **PR-A entregue**: exportação de contatos em CSV (`ContactsCsvExporter`, `GET /contacts/exportar`, BOM UTF-8, RN03/RN05 cobertos, 19 exemplos novos → base **112**). **PR-B (import) é a próxima entrega** e fecha a US06; depois vem o PR-C de docs/release. P0 100% entregue; P1 restante = US06 (8 SP, parcial).
+> 1. **A stack foi congelada** por decisão do PO, conforme o `README.md`. O upgrade de Rails saiu da sprint: a US08 (#31) foi **retirada da milestone** e mantida aberta em `Backlog`, sem data prevista.
+> 2. **A US08 estava mal formulada.** Pedia 7.0 → 7.1/7.2, mas **ambos os alvos já estão EOL** (7.1 em 05/10/2025, 7.2 em 09/08/2026). Se um dia a decisão mudar, o alvo passa a ser **8.1** (segurança até 10/10/2027) e a estimativa sobe de 13 para ~18 SP.
+> 3. **A US07 não pode usar `pg_search`.** A gem 2.4.0 exige `activerecord >= 8.0`; a 2.3.7 é a última compatível com Rails 7.0. Pinar uma versão congelada contradiz a decisão. A busca vai de `unaccent` + `pg_trgm` — **zero gem nova**.
+> 4. **A US10 já tinha a decisão de papel pronta.** A flag booleana `admin` está em produção (`db/schema.rb:36`, `require_admin`, `/usuarios`) — a promessa do README já está cumprida. A US virou *adicionar métricas a uma área que existe*, sem CanCan/Pundit/gem.
+>
+> Além disso: o critério de aceite transversal das #30–#33 apontava "~53 exemplos" (número herdado da fase CHORE, copiado em massa) e agora aponta **161**; o PR #42 — único PR no board — foi removido; a milestone #4 "P1 — Importante" (fechada e vazia) foi apagada; e a métrica de uso do export/import ganhou issue própria (#50).
+>
+> **Próxima entrega: US07' (busca full-text) → v0.12.**
 
 ---
 
 ## 2. Backlog Priorizado (para o dev contratado)
 
 > **Velocidade assumida:** ~15–20 SP/sprint (dev solo, sprint de 2 semanas).
-> **Total inicial:** ~63 SP → ~4 sprints para fechar P0+P1. **Restante (pós-P0):** ~50 SP → ~3 sprints; P2 segue como roadmap contínuo.
-> **Status pós-v0.10:** P0 e P1 fechados. Restam os P2 (US07–US10, 31 SP) como roadmap contínuo.
+> **Total inicial:** ~63 SP → P0 + P1 fechados em 4 sprints. **P2 em curso:** 18 SP na sprint atual (US07 + US09 + US10) + 13 SP fora do ciclo (US08).
+> **Status pós-v0.11:** P0 e P1 fechados. A release **v0.10** foi promovida (PR #48, `Closes #29`).
 
 ### 🔴 P0 — Crítico (Sprint 1–2)
 
@@ -47,16 +55,23 @@
 |---|-----------|-------|----|--------|
 | US04 | Como usuário, quero campos extras no contato (**e-mail, endereço, notas**) | Produto | 5 | ✅ v0.7 (#27/#42) — promovido em `main` via PR #43 |
 | US05 | Como dev, quero **sanear o legado**: remover `devise.en.yml`, decidir destino do footer (newsletter/social mock) e rodar RuboCop nas migrations antigas | Dívida | 3 | ✅ v0.8 (#28) — `devise.en.yml` removido, footer saneado; lint das migrations coberto pela exclusão `Rails/BulkChangeTable` |
-| US06 | Como usuário, quero **exportar/importar contatos (CSV ou vCard)** para não ficar preso à plataforma | Produto | 8 | ✅ **v0.9 + v0.10 (#29, PR #46 + PR-B)** — export e import CSV com round-trip, relatório linha+campo, RN01–RN04 e injeção de fórmula neutralizada. Falta o release (PR-C). vCard fora do v1 |
+| US06 | Como usuário, quero **exportar/importar contatos em CSV** para não ficar preso à plataforma | Produto | 8 | ✅ **v0.9 + v0.10 (#29, PR #46/#47 + release #48)** — export e import CSV com round-trip, relatório linha+campo, RN01–RN04 e injeção de fórmula neutralizada. Ciclo P1 **encerrado**. vCard fora do v1 (métrica de uso: #50) |
 
-### 🟢 P2 — Desejável (Backlog futuro)
+### 🟢 P2 — Desejável (ciclo em curso)
 
 | # | User Story | Épico | SP | Status |
 |---|-----------|-------|----|--------|
-| US07 | Como usuário, quero busca mais inteligente (**full-text/pg_search**, tolerante a acentos) | Produto | 5 | ⬜ backlog |
-| US08 | Como dev, quero **upgrade Rails 7.0 → 7.1/7.2** (7.0 próximo do fim de suporte) | Infra | 13 | ⬜ backlog |
-| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | ⬜ backlog |
-| US10 | Como admin, quero dashboard com métricas básicas (usuários ativos, contatos criados/semana) | Admin | 8 | ⬜ backlog |
+| US07 | Como usuário, quero busca que tolera **acentos e erros de digitação** | Produto | 5 | 🟡 **`Todo` (#30)** — próxima entrega, **v0.12**. `unaccent` + `pg_trgm`, zero gem nova |
+| US08 | Como dev, quero **upgrade Rails 7.0 → 8.1** | Infra | 13 | 🔒 **fora do ciclo (#31)** — stack congelada por decisão (PRD §8.5). Sem data prevista; se repriorizado, sobe para P0 |
+| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | 🟡 `Todo` (#32) — v0.13 |
+| US10 | Como admin, quero métricas básicas na área admin **que já existe** | Admin | 8 | 🟡 `Todo` (#33) — v0.14 |
+
+**Ordem da sprint (18 SP):** US07 → US09 → US10. São independentes; se o prazo apertar, a US10 escorrega sem afetar as outras — e é a única com item de gráfico, onde o escopo cresce sozinho.
+
+> **Mudanças de escopo aprovadas no CHORE-05:**
+> - **US07** deixa de usar `pg_search`. A gem 2.4.0 exige `activerecord >= 8.0`; a 2.3.7 é a última compatível com Rails 7.0 — pinar uma versão congelada contradiz a decisão de stack. Vai de `unaccent` + `pg_trgm`, que já vêm no `postgresql-contrib` da imagem `postgres:12.3`.
+> - **US10** não cria área admin nem sistema de papéis. A flag booleana `admin` já está em produção desde v0.x (`db/schema.rb:36`, `require_admin`, rota `/usuarios`) — a promessa do `README.md` já está cumprida. A US virou *adicionar três números a uma tela que já existe*.
+> - **US08** saiu da milestone e do ciclo. Ver a decisão completa no corpo da issue #31.
 
 ---
 
@@ -68,23 +83,25 @@
 
 ---
 
-## 4. Sugestão de Organização no GitHub Projects
+## 4. Organização no GitHub Projects (Board #65)
 
-- **Template:** Board
+- **Template:** Board — "Agenda — Backlog"
 - **Colunas:** `Backlog` / `Todo` / `In Progress` / `Review` / `Done`
-- **Campos customizados:** `Épico` (dropdown), `SP` (número), `Prioridade` (select: P0/P1/P2)
+- **Campos customizados:** `Épico` (Segurança/Infra/Produto/Dívida/Admin), `SP` (número), `Prioridade` (P0/P1/P2)
 - **Labels:** `P0` (vermelho), `P1` (amarelo), `P2` (verde)
-- **Automação sugerida:** issue aberta → coluna `Todo`; PR vinculada aberta → `In Progress`; PR mergeada → `Done`
+- **Itens:** apenas **issues**. PRs não entram como item — o rastreio é feito pela coluna "Linked pull requests" (o PR #42 foi removido por ser o único PR no board, enquanto os #46/#47/#48 nunca entraram)
+- **Milestone:** "P2 — Roadmap" agrupa a sprint em curso (18 SP, 3 issues). Itens fora do ciclo ficam **sem milestone** — é assim que a US08 (#31) representa "atrasado sem data prevista"
+- **Regra de fechamento:** a issue só fecha na PR de release `develop → main` com `Closes #X` no corpo — merge em `develop` não fecha issue neste repo
 
 ---
 
 ## 5. Próximos Passos
 
-1. **US06 — PR-C (docs + release):** promotion `develop → main` com `Closes #29`, fechamento da US06 no board e do ciclo P1 — última entrega antes dos P2
-2. **Decidir a primeira US do ciclo P2:** sugestão do PO é **US08 (upgrade Rails 7.0 → 7.1/7.2, 13 SP)**, porque o 7.0 está fora de suporte e é dívida de segurança; se a prioridade for entrega visível ao usuário, **US07 (busca full-text com pg_search, 5 SP)**
-3. **Medir a US06 antes de seguir:** contar quantos usuários usaram exportar/importar para decidir se o vCard (declarado fora do v1) merece entrar no backlog
-
-> A milestone se chama "v0.8 — Sprint US05 + US06", mas a **v0.8 já foi promovida** em `main` (PR #45, 25/09). A US06 está saindo como **v0.9 (export) + v0.10 (import)** — renomear a milestone para "v0.10 — Sprint US06" no release.
+1. **US07' — busca full-text (v0.12):** `unaccent` + `pg_trgm` por migration, scope `Contact.search` reescrito, **índice de expressão** `gin ((unaccent(name)) gin_trgm_ops)`. O `EXPLAIN` precisa confirmar o uso do índice — um índice comum em `name` nunca entra no plano, porque a query embrulha a coluna em `unaccent()`: a busca funciona e faz *seq scan* em silêncio, sem erro nenhum.
+2. **US09 — confirmação de e-mail (v0.13):** reusa o mailer da US01. Antes de começar, ajustar `create_user` (`spec/support/factory_helpers.rb:4`) e `db/seeds.rb:4` — `find_or_create_by!` não executa o bloco em registro existente, então o admin `teste@exemplo.com` documentado no `AGENTS.md` ficaria sem confirmação em qualquer banco já semeado.
+3. **US10 — métricas (v0.14):** três números na tela de `/usuarios` que já existe. Reaproveitar o `require_admin` atual; nenhuma gems de papel ou de gráfico.
+4. **CHORE-05 (#49) —** fechar junto da PR da US07'.
+5. **Métrica de uso do export/import (#50):** decidir o vCard com dado na mão, antes ou durante o ciclo.
 
 ---
 
@@ -92,6 +109,7 @@
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 1.6 | Set 2026 | **Higiene do ciclo P2 (CHORE-05, #49)** — release v0.10 promovida (PR #48), ciclo P1 encerrado. Stack **congelada por decisão** conforme o README: US08 (#31) saiu da milestone e do ciclo (e os alvos 7.1/7.2 já estavam EOL — se repriorizada, o alvo passa a ser 8.1 e a estimativa vai a ~18 SP). US07 (#30) reescrita: `pg_search` **descartado** (2.4.0 exige `activerecord >= 8.0`), vai de `unaccent` + `pg_trgm`. US10 (#33): decisão de papel **já resolvida** (flag booleana `admin` em produção). AC transversal das #30–#33 corrigida de ~53 para 161. Issue de métrica criada (#50). Board: #30/#32/#33 em `Todo`, PR #42 removido, milestone #4 apagada, #5 reescrita. Fonte PRD v0.11 |
 | 1.5 | Set 2026 | US06 concluída (v0.9 export + v0.10 import, #29): P1 fechado, injeção de fórmula resolvida no parse, PR-C (release) como próximo passo, ciclo P2 aberto com sugestão de US08, critério transversal para 161 exemplos, fonte PRD v0.10 |
 | 1.4 | Set 2026 | US06 iniciada (#29): **PR-A entregue** (export CSV — `ContactsCsvExporter`, `GET /contacts/exportar`, BOM UTF-8, 112 exemplos); PR-B (import) e PR-C (release) mapeados nos próximos passos; injeção de fórmula no CSV registrada como decisão em aberto; critério transversal atualizado para 112 exemplos; alerta de milestone (v0.8 já promovida, US06 sai como v0.9), fonte PRD v0.9 |
 | 1.3 | Set 2026 | US05 concluída (v0.8, #28), avaliação do PO atualizada (débito técnico baixo), critério transversal para 93 exemplos, próximos passos pós-v0.8 (US06), fonte PRD v0.8 |
