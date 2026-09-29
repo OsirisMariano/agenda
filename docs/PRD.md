@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.10  
+**Versão:** 0.11  
 **Data:** Setembro 2026  
-**Status:** Em desenvolvimento (v0.10 - Exportação e importação de contatos em CSV)
+**Status:** Em desenvolvimento (v0.10 promovida em `main`; ciclo P2 aberto — v0.12 busca full-text)
 
 ---
 
@@ -364,6 +364,23 @@ end
 - Resposta HTTP 429 genérica em pt-BR; janela controlada por `Retry-After: 60`
 - Store = `Rails.cache` (por processo em dev/prod — ver débito em §12.4)
 
+### 8.5 Risco aceito — stack fora de suporte (decisão de produto, set/2026)
+
+A stack do projeto está **congelada** conforme o `README.md`, que também declara que o Agenda *"foi uma oportunidade para aprender Ruby on Rails e Bootstrap"*. É um projeto **legado/educacional**, não um produto exposto a tráfego não-confiável. O PO decidiu não gastar orçamento de sprint em upgrade de framework.
+
+| Componente | Versão | Situação em set/2026 |
+|---|---|---|
+| Ruby | 3.3.0 | com suporte |
+| **Rails** | **7.0.8.6** | **EOL desde 15/12/2025** (7.0.10 é a última release) — sem correção de segurança |
+| Bootstrap | 5.3.3 | com suporte |
+| **PostgreSQL** | **12.3** | **EOL desde 14/11/2024** (`docker-compose.yml` e CI) |
+
+**O que isso significa na prática:** vulnerabilities do Rails conhecidas **não recebem correção** neste projeto, e o Postgres não recebe correção de bugs. Aceito porque o Agenda não expõe superfície pública nem processa dados de terceiros — os contatos são privados por usuário e o único vetor de entrada externa é o CSV do próprio dono da conta (sanitizado no parse, §4.7).
+
+**Compromisso:** nenhuma dependência nova pode exigir versão superior à da stack congelada. Isso descartou a gem `pg_search` (a 2.4.0 exige `activerecord >= 8.0`; a 2.3.7 é a última compatível com Rails 7.0) e levou a US07 para `unaccent` + `pg_trgm`, que já vêm no `postgresql-contrib` da imagem 12.3.
+
+**Se a decisão mudar:** a issue #31 sobe para **P0** e o alvo passa a ser **Rails 8.1** (segurança até 10/10/2027) — não 7.1/7.2, que já estão EOL. O escopo real é maior que os 13 SP originalmente estimados: `puma` 5→6, `rspec-rails` 7→8, `rubocop-rails` 2.24→2.30+ e Postgres 12→16 no compose **e** no CI.
+
 ---
 
 ## 9. Configuração e Deploy
@@ -470,13 +487,13 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Adicionar campos adicionais (e-mail, endereço e notas) aos contatos — **concluído em v0.7**
 - ✅ Exportar contatos em CSV — **concluído em v0.9**
 - ✅ Importar contatos em CSV (round-trip, relatório de erros, RN01–RN04) — **concluído em v0.10**
-- Implementar busca full-text
+- Implementar busca full-text — **planejado para v0.12 (US07, #30)**: `unaccent` + `pg_trgm` do próprio Postgres, **sem gem nova** (o `pg_search` foi descartado por incompatibilidade com a stack congelada — ver §8.5)
 - ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
 - ✅ Remover arquivos desnecessários do repositório (`views`, `test_hook.rb`) — **concluído em v0.3**
 - ✅ Rodar rubocop no código legado (migrations antigas com offenses pré-existentes) — **concluído em v0.3/v0.4** (CHORE-04: lint zerado com exclusão cirúrgica de `Rails/BulkChangeTable` em `db/migrate/**/*`)
 - ✅ Sanear o legado: remover `devise.en.yml` e os mocks do footer — **concluído em v0.8**
-- Rate limit via `:memory_store` é por processo Puma — em deploy multi-worker, migrar para store compartilhado (Redis) na US08
+- Rate limit via `:memory_store` é por processo Puma — em deploy multi-worker, migrar para store compartilhado (Redis). **Fora do ciclo:** dependia do upgrade de Rails (issue #31), que saiu da milestone por decisão de stack congelada (§8.5)
 - **Injeção de fórmula no CSV:** **resolvida no PR-B da US06 (v0.10)** — o vetor nasce no CSV de terceiros, então a mitigação ficou no parse: `ContactsCsvImporter#sanitize_formula` prefixa `'` em valores iniciados por `= + - @` (e tab/CR), sem prefixar de novo quando o valor já vem escapado (round-trip exportar→importar→exportar preservado)
 - **Importação de contatos (CSV):** **concluída no PR-B da US06** (§4.7) — relatório linha+campo, guardrails de tamanho/encoding, RN01–RN04
 
@@ -494,10 +511,13 @@ O projeto **Agenda** entrega um sistema funcional de gestão de contatos com:
 - ✅ Importação de contatos em CSV (round-trip sem aprisionamento, relatório linha+campo, RN01–RN04, injeção de fórmula neutralizada)
 - ✅ Privacidade garantida (usuários veem apenas seus dados)
 - ✅ Proteção contra brute-force no login (rate limit rack-attack)
+- ⬜ Busca tolerante a acentos e erros de digitação — **planejado para v0.12 (US07, #30)**
 - ✅ Deploy via Docker configurado
 - ✅ Estrutura para testes com RSpec
 
 O sistema está funcional para uso básico, com débito técnico documentado para futuras iterações.
+
+**Limite conhecido e aceito:** a stack está fora de suporte oficial (Rails 7.0 e PostgreSQL 12.3). O §8.5 registra a decisão, o risco e a condição para revertê-la.
 
 ---
 
@@ -505,6 +525,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.11 | Set 2026 | **Higiene do ciclo P2 (CHORE-05, #49)** — mudança só de docs, sem arquivo de runtime: novo **§8.5 Risco aceito — stack fora de suporte**, registrando a decisão de congelar a stack conforme o `README.md` (Rails 7.0.8.6 EOL desde 15/12/2025; PostgreSQL 12.3 EOL desde 14/11/2024) e o motivo — projeto legado/educacional, sem tráfego não-confiável; §12.4 ajustada (busca full-text remanejada para v0.12/US07; débito do `:memory_store` desvinculado da US08); §13 e §14. No GitHub: US08 (#31) saiu da milestone "P2 — Roadmap" com a decisão do PO no corpo da issue, US07 (#30) reescrita para `unaccent` + `pg_trgm` (o `pg_search` foi descartado: 2.4.0 exige `activerecord >= 8.0`, a 2.3.7 é a última compatível com Rails 7.0), US10 (#33) teve o item "decidir o modelo de papel" removido (a flag booleana `admin` já está em produção), AC transversal das #30–#33 corrigida de "~53" para **161 exemplos**, e a issue de métrica de uso do export/import criada (#50). **161 exemplos, sem regressão.** |
 | 0.10 | Set 2026 | **Importação de contatos em CSV (US06 — PR-B)**: rota `POST /contacts/importar` com campo `arquivo` (multipart) e serviço `ContactsCsvImporter` — cabeçalho pt-BR normalizado (minúsculo/sem acento/sem hífen, colunas desconhecidas ignoradas), BOM ignorado, linhas em branco puladas, exigência das colunas `nome` e `telefone`; **validação linha a linha reaproveitando as validações do model** (nenhuma regra duplicada) com relatório `Linha N: campo mensagem`; **HTTP 422** com o `index` re-renderizado e o resumo `3 de 4 linhas entraram. Veja o que ficou de fora.`; **RN01–RN04** (nunca sobrescreve/apaga, telefone duplicado é erro reportado, escopo em `current_user.contacts`); guardrails de **5 MB** (checado antes da leitura) e **UTF-8 obrigatório** (tempfile binário convertido antes do parse); **injeção de fórmula neutralizada** (`= + - @ \t \r` recebem prefixo `'`, sem duplicar quando já escapado — dívida que o §12.4 havia delegated ao PR-B); card de upload na listagem + alerta de erros; extração de `load_contacts` no controller para o `index` e o relatório compartilharem a mesma montagem; specs de serviço (32), request (14) e feature, incluindo **round-trip exportar→importar em outra conta**, **161 exemplos** (de 112). PRD §4.7, §6, §7.3, §10.1, §12.4 e §13 atualizados. US06 concluída. |
 | 0.9 | Set 2026 | **Exportação de contatos em CSV (US06 — PR-A)**: serviço `ContactsCsvExporter` (`app/services/contacts_csv_exporter.rb`, primeiro diretório de services do projeto) com o contrato de cabeçalho `nome,telefone,e-mail,endereço,notas`, BOM UTF-8 para o Excel, escaping automático de vírgula/aspas/quebra de linha; rota `GET /contacts/exportar` (`contacts#export`, `on: :collection`) servindo `send_data` como anexo `contatos-AAAAMM-DD.csv`; escopo por usuário via `current_user.contacts.order(:name)` **ignorando paginação e filtro de busca**; botão "Exportar (CSV)" na listagem; specs de serviço, request e feature, **112 exemplos** (de 93). PRD §4.6, §6, §7.3, §10.1, §12.4 e §13 atualizados. A importação é o PR-B da US06. |
 | 0.8 | Set 2026 | **Saneamento do legado (US05)**: remoção de `config/locales/devise.en.yml` (Devise fora do Gemfile e sem uso), footer enxuto (removidos o formulário mock de newsletter, os 3 ícones de redes sociais com `href="#"`, os links "Ajuda"/"Privacidade" e o bloco `<% else %>` inalcançável — o footer só é renderizado para usuário logado; colunas rebalanceadas para `col-6 col-md-6` e barra inferior simplificada para copyright), spec de feature do rodapé (`spec/features/footer_spec.rb`) garantindo ausência de `a[href="#"]` e de mocks, **93 exemplos**. PRD §7.1, §10.1, §12.2, §12.3, §12.4 atualizados. |
