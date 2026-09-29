@@ -109,4 +109,106 @@ RSpec.describe(User, type: :model) do
       end
     end
   end
+
+  describe "confirmação de e-mail (US09)" do
+    let(:user) { create_user(confirmed_at: nil) }
+
+    describe "#confirmed?" do
+      it "retorna false sem confirmed_at" do
+        expect(user).not_to(be_confirmed)
+      end
+
+      it "retorna true com confirmed_at" do
+        expect(create_user).to(be_confirmed)
+      end
+    end
+
+    describe "#create_confirmation_digest" do
+      it "define o digest, o horário e o token na memória" do
+        user.create_confirmation_digest
+
+        expect(user.confirmation_digest).to(be_present)
+        expect(user.confirmation_sent_at).to(be_present)
+        expect(user.confirmation_token).to(be_present)
+      end
+
+      it "não armazena o token cru no banco" do
+        user.create_confirmation_digest
+
+        expect(user.reload.confirmation_digest).not_to(eq(user.confirmation_token))
+        expect(BCrypt::Password.new(user.confirmation_digest) == user.confirmation_token).to(be(true))
+      end
+
+      it "não confirma o usuário" do
+        user.create_confirmation_digest
+
+        expect(user.reload).not_to(be_confirmed)
+      end
+    end
+
+    describe "#confirmation_authenticated?" do
+      before { user.create_confirmation_digest }
+
+      it "retorna true quando o token é o correto" do
+        expect(user.confirmation_authenticated?(user.confirmation_token)).to(be(true))
+      end
+
+      it "retorna false quando o token é inválido" do
+        expect(user.confirmation_authenticated?("token-invalido")).to(be(false))
+      end
+
+      it "retorna false quando não há digest" do
+        expect(described_class.new.confirmation_authenticated?("qualquer")).to(be(false))
+      end
+    end
+
+    describe "#confirmation_expired?" do
+      it "retorna false logo após criar o digest" do
+        user.create_confirmation_digest
+
+        expect(user.confirmation_expired?).to(be(false))
+      end
+
+      it "retorna true quando nunca houve digest" do
+        expect(user.confirmation_expired?).to(be(true))
+      end
+
+      it "retorna true após 2 horas" do
+        user.create_confirmation_digest
+        user.update!(confirmation_sent_at: 3.hours.ago)
+
+        expect(user.confirmation_expired?).to(be(true))
+      end
+
+      it "retorna false antes de completar 2 horas" do
+        user.create_confirmation_digest
+        user.update!(confirmation_sent_at: 1.hour.ago)
+
+        expect(user.confirmation_expired?).to(be(false))
+      end
+    end
+
+    describe "#confirm" do
+      it "marca o usuário como confirmado" do
+        user.confirm
+
+        expect(user.reload).to(be_confirmed)
+      end
+
+      it "limpa o digest, para o link não valer de novo" do
+        user.create_confirmation_digest
+        user.confirm
+
+        expect(user.reload.confirmation_digest).to(be_nil)
+      end
+
+      it "preserva o horário de envio" do
+        user.create_confirmation_digest
+        sent_at = user.confirmation_sent_at
+        user.confirm
+
+        expect(user.reload.confirmation_sent_at).to(be_within(1.second).of(sent_at))
+      end
+    end
+  end
 end

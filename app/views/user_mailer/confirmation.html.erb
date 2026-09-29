@@ -1,0 +1,11 @@
+<h1>Confirme seu e-mail</h1>
+
+<p>Olá, <%= @user.name %>! Bem-vindo ao Agenda.</p>
+
+<p>Clique no link abaixo para confirmar seu e-mail e liberar o acesso (válido por 2 horas):</p>
+
+<p>
+  <%= link_to "Confirmar meu e-mail", confirmar_email_url(token: @token, email: @user.email) %>
+</p>
+
+<p>Se você não criou esta conta, ignore este e-mail — nada acontece.</p>

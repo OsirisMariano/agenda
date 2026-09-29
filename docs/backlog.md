@@ -31,7 +31,7 @@
 >
 > Além disso: o critério de aceite transversal das #30–#33 apontava "~53 exemplos" (número herdado da fase CHORE, copiado em massa) e agora aponta **161**; o PR #42 — único PR no board — foi removido; a milestone #4 "P1 — Importante" (fechada e vazia) foi apagada; e a métrica de uso do export/import ganhou issue própria (#50).
 >
-> **Próxima entrega: US07' (busca full-text) → v0.12.**
+> **Próxima entrega: US10 (métricas) → v0.14.**
 
 ---
 
@@ -63,7 +63,7 @@
 |---|-----------|-------|----|--------|
 | US07 | Como usuário, quero busca que tolera **acentos e erros de digitação** | Produto | 5 | 🔵 **`In Progress` (#30)** — em revisão, **v0.12**. `unaccent` + `pg_trgm`, zero gem nova, sem índice de expressão (`unaccent()` é `STABLE` no PG 12.3) |
 | US08 | Como dev, quero **upgrade Rails 7.0 → 8.1** | Infra | 13 | 🔒 **fora do ciclo (#31)** — stack congelada por decisão (PRD §8.5). Sem data prevista; se repriorizado, sobe para P0 |
-| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | 🟡 `Todo` (#32) — v0.13 |
+| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | 🔵 **`In Progress` (#32)** — em revisão, **v0.13**. Token hasheado, expiração 2h, login bloqueado até confirmar |
 | US10 | Como admin, quero métricas básicas na área admin **que já existe** | Admin | 8 | 🟡 `Todo` (#33) — v0.14 |
 
 **Ordem da sprint (18 SP):** US07 → US09 → US10. São independentes; se o prazo apertar, a US10 escorrega sem afetar as outras — e é a única com item de gráfico, onde o escopo cresce sozinho.
@@ -97,13 +97,14 @@
 
 ## 5. Próximos Passos
 
-1. **US07' — busca full-text (v0.12):** `unaccent` + `pg_trgm` por migration, scope `Contact.search` reescrito com `ILIKE` sobre as colunas sem acento e `word_similarity >= 0.4` como plano B para erro de digitação (medido: erro simples 0.60–0.667, plural 0.50, transposição como `jocao` 0.333–0.375 e por isso de fora).
+1. **US07' — busca full-text (v0.12, entregue):** `unaccent` + `pg_trgm` por migration, scope `Contact.search` reescrito com `ILIKE` sobre as colunas sem acento e `word_similarity >= 0.4` como plano B para erro de digitação (medido: erro simples 0.60–0.667, plural 0.50, transposição como `jocao` 0.333–0.375 e por isso de fora).
    - **Sem índice de expressão, e não é escolha nossa:** `unaccent()` é `STABLE`, não `IMMUTABLE`, no PostgreSQL 12.3, então `gin ((unaccent(name)) gin_trgm_ops)` é recusado na criação (`functions in index expression must be marked IMMUTABLE`). O plano original da issue está tecnicamente errado.
    - O que segura a consulta é o índice de `user_id` já existente: o scope herda `current_user.contacts`, o planner recorta por `user_id` e só filtra as linhas do dono. A spec do `EXPLAIN` fixa isso com `enable_seqscan = off`, para o teste não depender do tamanho da tabela.
    - Consequência aceita: o filtro de texto é um *filter* sobre as linhas do usuário, não uma busca indexada. Com a escala de um app pessoal (dezenas a milhares de contatos por conta) o custo é irrelevante. Se um dia virar gargalo, o caminho é uma coluna `name_search` já sem acento mantida por trigger, não gambiarra de índice.
-2. **US09 — confirmação de e-mail (v0.13):** reusa o mailer da US01. Antes de começar, ajustar `create_user` (`spec/support/factory_helpers.rb:4`) e `db/seeds.rb:4` — `find_or_create_by!` não executa o bloco em registro existente, então o admin `teste@exemplo.com` documentado no `AGENTS.md` ficaria sem confirmação em qualquer banco já semeado.
-3. **US10 — métricas (v0.14):** três números na tela de `/usuarios` que já existe. Reaproveitar o `require_admin` atual; nenhuma gems de papel ou de gráfico.
-4. **CHORE-05 (#49) —**implementação já encerrada na PR #51; a issue só fecha na promoção a `main`.
+2. **US09 — confirmação de e-mail (v0.13, entregue):** reusou o mailer da US01. As duas armadilhas previstas foram tratadas: `create_user` (`spec/support/factory_helpers.rb`) produz usuário confirmado por padrão, com override `confirmed_at: nil`; e `db/seeds.rb` ganhou `user.update!(confirmed_at: user.confirmed_at || Time.current)` **fora** do bloco, porque `find_or_create_by!` não executa o bloco em registro existente. A terceira armadilha não estava prevista e era a pior: sem backfill, a coluna nova nascia `NULL` para toda conta que já existia e o gate de login trancaria o mundo. A migration faz `UPDATE users SET confirmed_at = created_at WHERE confirmed_at IS NULL`.
+   - **Dívida deixada de propósito:** `POST /reenviar-confirmacao` sem rate limit. A receita já existe na US03 (rack-attack, 5/IP/min no login); o natural é 3/IP/min aqui. Saiu do escopo por simplicidade, não por ser inofensivo — ver §12.4 do PRD.
+3. **US10 — métricas (v0.14):** três números na tela de `/usuarios` que já existe. Reaproveitar o `require_admin` atual; nenhuma gem de papel nem de gráfico.
+4. **CHORE-05 (#49) —** implementação já encerrada na PR #51; a issue só fecha na promoção a `main`.
 5. **Métrica de uso do export/import (#50):** decidir o vCard com dado na mão, antes ou durante o ciclo.
 
 ---
@@ -112,6 +113,7 @@
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 1.8 | Set 2026 | **Confirmação de e-mail entregue (US09, #32, v0.13)** — migration com `confirmed_at`/`confirmation_digest`/`confirmation_sent_at` e **backfill `confirmed_at = created_at`** (sem ele o gate trancaria toda conta existente — o pior jeito de ganhar recurso: quebrando o que funcionava); mailer espelhando a US01; rotas públicas de confirmar e reenviar; login bloqueado até confirmar; `create_user` confirmado por padrão e `db/seeds.rb` com `update!` fora do bloco. Link único e simples: o `GET` confirma direto, sem tela intermediária. **Dívida conscientemente deixada:** reenvio sem rate limit (§12.4 do PRD) — mesma receita do rack-attack da US03, 3 linhas. Cobertura 185 → **230 exemplos**. Fonte PRD v0.13 |
 | 1.7 | Set 2026 | **Busca full-text entregue (US07, #30, v0.12)** — migration habilitando `unaccent` + `pg_trgm` (já no `postgresql-contrib`, zero gem), scope `Contact.search` com acento nas duas direções, `ILIKE` em nome/e-mail, substring no telefone e `word_similarity >= 0.4` para erro de digitação; UI com dica de tolerância a acento. **Plano corrigido:** o índice de expressão `gin ((unaccent(name)) gin_trgm_ops)` da issue é impossível no PostgreSQL 12.3 (`unaccent()` é `STABLE`, não `IMMUTABLE`) — o recorte passa a ser garantido pelo índice de `user_id`, com spec de `EXPLAIN` e `enable_seqscan = off`. Cobertura 161 → **185 exemplos**. Fonte PRD v0.12 |
 | 1.6 | Set 2026 | **Higiene do ciclo P2 (CHORE-05, #49)** — release v0.10 promovida (PR #48), ciclo P1 encerrado. Stack **congelada por decisão** conforme o README: US08 (#31) saiu da milestone e do ciclo (e os alvos 7.1/7.2 já estavam EOL — se repriorizada, o alvo passa a ser 8.1 e a estimativa vai a ~18 SP). US07 (#30) reescrita: `pg_search` **descartado** (2.4.0 exige `activerecord >= 8.0`), vai de `unaccent` + `pg_trgm`. US10 (#33): decisão de papel **já resolvida** (flag booleana `admin` em produção). AC transversal das #30–#33 corrigida de ~53 para 161. Issue de métrica criada (#50). Board: #30/#32/#33 em `Todo`, PR #42 removido, milestone #4 apagada, #5 reescrita. Fonte PRD v0.11 |
 | 1.5 | Set 2026 | US06 concluída (v0.9 export + v0.10 import, #29): P1 fechado, injeção de fórmula resolvida no parse, PR-C (release) como próximo passo, ciclo P2 aberto com sugestão de US08, critério transversal para 161 exemplos, fonte PRD v0.10 |

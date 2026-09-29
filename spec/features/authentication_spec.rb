@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe("Autenticação", type: :feature) do
-  it "permite cadastrar, fazer login e sair" do
+  it "permite cadastrar, confirmar o e-mail, fazer login e sair" do
     visit root_path
     click_on "Cadastre-se Grátis"
 
@@ -13,8 +13,22 @@ RSpec.describe("Autenticação", type: :feature) do
     fill_in "Confirmar Senha", with: "123456"
     click_on "Criar Conta"
 
+    user = User.find_by(email: "novo@exemplo.com")
+    expect(user).to(be_present)
+    expect(page).to(have_content("Confira seu e-mail"))
+
+    # US09: a conta existe mas ainda não entra no sistema.
+    user.create_confirmation_digest
+    visit confirmar_email_path(email: user.email, token: user.confirmation_token)
+
+    expect(page).to(have_content("E-mail confirmado com sucesso!"))
+
+    visit entrar_path
+    fill_in "E-mail", with: "novo@exemplo.com"
+    fill_in "Senha", with: "123456"
+    click_on "Entrar"
+
     expect(page).to(have_content("Ver Meus Contatos"))
-    expect(User.find_by(email: "novo@exemplo.com")).to(be_present)
 
     within(".dropdown-menu") { click_on "Sair" }
     expect(page).to(have_content("Entrar"))

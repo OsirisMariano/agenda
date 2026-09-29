@@ -4,7 +4,7 @@
 
 **Versão:** 0.11  
 **Data:** Setembro 2026  
-**Status:** Em desenvolvimento (v0.10 promovida em `main`; ciclo P2 aberto — v0.12 busca full-text em revisão)
+**Status:** Em desenvolvimento (v0.10 promovida em `main`; ciclo P2 aberto — v0.13 confirmação de e-mail)
 
 ---
 
@@ -81,6 +81,19 @@ Pessoas físicas que necessitam organizar sua agenda de contatos pessoais com pr
   - E-mail: obrigatório, único (case insensitive), formato válido
   - Senha: mínimo 6 caracteres
   - Confirmação de senha: obrigatória quando senha presente
+- **Confirmação de e-mail obrigatória (v0.13, US09):** o cadastro grava o usuário e **não abre sessão**. Dispara `UserMailer#confirmation` e redireciona para `GET /entrar` com o aviso "Cadastro realizado! Confira seu e-mail para confirmar e entrar."
+
+#### Confirmação de E-mail ✉️ (v0.13, US09)
+- **Link:** `GET /confirmar-email` → `confirmations#edit` (rota pública: o link chega por e-mail, sem sessão)
+- **Reenvio:** `GET /reenviar-confirmacao` (formulário) e `POST /reenviar-confirmacao` → `confirmations#create`
+- **Colunas:** `confirmed_at`, `confirmation_digest`, `confirmation_sent_at` — espelham `reset_digest`/`reset_sent_at` da §4.4
+- **Token hasheado:** o token em claro vive só em `@confirmation_token`, em memória; no banco vai `BCrypt::Password.create`
+- **Expiração:** 2 horas (`User::CONFIRMATION_EXPIRATION`)
+- **Uso único:** `#confirm` grava `confirmed_at` e **limpa o digest no mesmo `update!`**, então o link não funciona uma segunda vez
+- **Resposta genérica no reenvio:** e-mail inexistente e e-mail já confirmado recebem a mesma mensagem, para o formulário não virar oráculo de quais contas existem
+- **Login bloqueado até confirmar:** `sessions#create` confere a senha, depois `user.confirmed?`; conta pendente não recebe sessão nem cookie de lembrar-me e vai para o formulário de reenvio. Não é vazamento de informação — quem chega nesse branch acabou de acertar a senha
+- **Link único, sem tela intermediária:** o `GET` confirma direto. Em e-mail corporativo com antivírus que faz *prefetch* de link, o token pode ser consumido antes do clique; o custo é o usuário pedir o reenvio e funcionar em seguida. Decisão de simplicidade consciente, não descuido
+- **Migration com backfill:** `execute("UPDATE users SET confirmed_at = created_at WHERE confirmed_at IS NULL")`. Contas anteriores à US09 já provaram posse do endereço; sem o backfill o gate de login trancaria todo mundo que já tinha conta
 
 #### Login/Logout
 - **Rota Login:** `GET /entrar` → `sessions#new`
@@ -207,16 +220,19 @@ Fecha a US06 e completa o par bidirecional do §4.6: o usuário exporta, sai da 
 ┌─────────────────┐           ┌─────────────────┐
 │      User       │           │     Contact     │
 ├─────────────────┤           ├─────────────────┤
-│ id              │ 1       N │ id              │
-│ name            │◄──────────│ name            │
-│ email           │           │ phone           │
-│ password_digest │           │ email           │
-│ admin (bool)    │           │ address         │
-│ created_at      │           │ notes           │
-│ updated_at      │           │ user_id (FK)    │
-└─────────────────┘           │ created_at      │
-                              │ updated_at      │
-                              └─────────────────┘
+│ id                    │ 1       N │ id              │
+│ name                  │◄──────────│ name            │
+│ email                 │           │ phone           │
+│ password_digest       │           │ email           │
+│ admin (bool)          │           │ address         │
+│ confirmed_at          │           │ notes           │
+│ confirmation_digest   │           │ user_id (FK)    │
+│ confirmation_sent_at  │           │ created_at      │
+│ reset_digest          │           │ updated_at      │
+│ reset_sent_at         │           └─────────────────┘
+│ created_at            │
+│ updated_at            │
+└─────────────────┘
 ```
 
 ### 5.2 Detalhes dos Modelos
@@ -440,18 +456,19 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **185 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **230 exemplos, 0 falhas**
 - **Testes de model:**
   - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
+  - `user_spec.rb` (validações, `#admin?`, recuperação de senha, **confirmação de e-mail**: `confirmed?`, digest hasheado, expiração de 2h, `#confirm` limpando o digest)
   - `contact_spec.rb` (validações de telefone, unicidade por usuário, campos extras, busca com acento, erro de digitação, termo vazio, isolamento por usuário, uso do índice de `user_id` no `EXPLAIN`)
 - **Testes de controller:**
   - `users_controller_spec.rb` (cadastro, autorização de admin)
   - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
   - `contacts_controller_spec.rb` (CRUD, `show`, paginação, busca, campos extras, isolamento por usuário)
-- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos) + `contacts_search_spec.rb` (**busca US07**: sem sessão redireciona, acento nas duas direções, erro de digitação, telefone, sem resultado, termo vazio devolvendo a listagem, isolamento por usuário) + `contacts_import_spec.rb` (**import CSV**: ida e volta exportar→importar, relatório linha+campo, preservação de linhas válidas com inválida no meio, RN01/RN02/RN03, guardrails de 5 MB, encoding, colunas obrigatórias)
+- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `confirmations_spec.rb` (**confirmação de e-mail**: confirmar sem sessão, token expirado, token inválido, e-mail inexistente, link reusado, link de conta já confirmada, reenvio gerando token novo, resposta genérica, reenvio que não confirma, gate de login sem sessão e sem cookie de lembrar-me) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos) + `contacts_search_spec.rb` (**busca US07**: sem sessão redireciona, acento nas duas direções, erro de digitação, telefone, sem resultado, termo vazio devolvendo a listagem, isolamento por usuário) + `contacts_import_spec.rb` (**import CSV**: ida e volta exportar→importar, relatório linha+campo, preservação de linhas válidas com inválida no meio, RN01/RN02/RN03, guardrails de 5 MB, encoding, colunas obrigatórias)
 - **Testes de serviço:** `spec/services/contacts_csv_exporter_spec.rb` (cabeçalho, uma linha por contato, campos opcionais, escaping de vírgula/aspas/quebra de linha, acentos em UTF-8, BOM, separador, ordem preservada) + `spec/services/contacts_csv_importer_spec.rb` (parse normalizado, BOM ignorado, linhas em branco, reaproveita validações do model, duplicidade, acumulado de erros, arquivo só com cabeçalho, **neutralização de injeção de fórmula**)
-- **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo)
-- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**, **upload de CSV**, **relatório de erros na tela**, recusa de arquivo inválido), `contacts_search_spec.rb` (**busca pela tela**: acento, erro de digitação, mensagem orientando a busca sem acento, contato de outra conta invisível), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
+- **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo, tanto na recuperação de senha quanto na confirmação de e-mail)
+- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**, **upload de CSV**, **relatório de erros na tela**, recusa de arquivo inválido), `confirmations_spec.rb` (**confirmação pela tela**: cadastro que não entra, liberação após confirmar, link expirado, reenvio pela tela, formulário que não entrega link a e-mail inexistente, link reusado), `contacts_search_spec.rb` (**busca pela tela**: acento, erro de digitação, mensagem orientando a busca sem acento, contato de outra conta invisível), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
 - **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
@@ -501,6 +518,8 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Exportar contatos em CSV — **concluído em v0.9**
 - ✅ Importar contatos em CSV (round-trip, relatório de erros, RN01–RN04) — **concluído em v0.10**
 - ✅ Implementar busca full-text — **entregue em v0.12 (US07, #30)**: `unaccent` + `pg_trgm` do próprio Postgres, **sem gem nova** (o `pg_search` foi descartado por incompatibilidade com a stack congelada — ver §8.5). Sem índice de expressão, porque `unaccent()` é `STABLE` no PG 12.3 — ver §7.3
+- ✅ Confirmar e-mail no cadastro (US09) — **entregue em v0.13 (#32)**: token hasheado, expiração 2h, link de uso único, reenvio com resposta genérica e login bloqueado até confirmar. Backfill `confirmed_at = created_at` para não trancar contas existentes — ver §4.1
+- **Rate limit no reenvio de confirmação (dívida aberta, decisão consciente):** `POST /reenviar-confirmacao` dispara e-mail sem limite. Em loop, dá para encher a caixa de um terceiro com mensagens do nosso domínio — e e-mail nosso marcado como lixo é e-mail legítimo que deixa de chegar. A US03 já tem o tempero pronto no rack-attack (5/IP/min no login); o natural é 3/IP/min aqui. **Deixado de fora por simplicidade de escopo na US09**, não por ser inofensivo
 - ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
 - ✅ Remover arquivos desnecessários do repositório (`views`, `test_hook.rb`) — **concluído em v0.3**
@@ -538,6 +557,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.13 | Set 2026 | **Confirmação de e-mail no cadastro (US09 — #32)**: migration `20260929130000_add_confirmation_to_users` com `confirmed_at`, `confirmation_digest` e `confirmation_sent_at` (espelhando `reset_digest`/`reset_sent_at` da US01) **e backfill `UPDATE users SET confirmed_at = created_at WHERE confirmed_at IS NULL`** — sem ele o gate de login trancaria toda conta que já existia; `UserMailer#confirmation` com views html/text; rotas públicas `GET /confirmar-email` e `GET|POST /reenviar-confirmacao`; `ConfirmationsController` com token hasheado, expiração de 2h (`User::CONFIRMATION_EXPIRATION`), link de uso único (`#confirm` limpa o digest no mesmo `update!`) e resposta genérica no reenvio para não virar oráculo de contas; **login bloqueado até confirmar**, sem sessão nem cookie de lembrar-me; `create_user` passou a produzir usuário confirmado por padrão (override `confirmed_at: nil`) e `db/seeds.rb` ganhou `update!` fora do bloco do `find_or_create_by!`; tela de reenvio + link "Não confirmei meu e-mail" no login. **Duas specs existentes mudaram de sentido** (o cadastro não abre mais sessão): `authentication_spec.rb` e `users_controller_spec.rb`. **230 exemplos** (de 185), sem regressão. PRD §4.1, §5.1, §12.4 e histórico atualizados. |
 | 0.12 | Set 2026 | **Busca full-text tolerante a acentos e erro de digitação (US07 — #30)**: migration `20260929110000_enable_unaccent_and_pg_trgm_on_contacts` habilitando `unaccent` e `pg_trgm` (já presentes no `postgresql-contrib` da imagem 12.3, **zero gem nova**); scope `Contact.search` reescrito com acento nas duas direções, `ILIKE` sobre `name`/`email`, substring em `phone` e `word_similarity >= 0.4` como plano B para erro de digitação; termo vazio devolve vazio; isolamento por `user_id` herdado de `current_user.contacts`. UI: placeholder "Buscar por nome, e-mail ou telefone...", dica de tolerância a acento e mensagem de estado vazio orientando a nova digitação. **Correção de plano:** o `gin ((unaccent(name)) gin_trgm_ops)` previsto na issue é impossível — `unaccent()` é `STABLE`, não `IMMUTABLE`, no PostgreSQL 12.3, e a criação do índice é recusada; o recorte por `user_id` é o que segura a consulta, garantido por spec de `EXPLAIN` com `enable_seqscan = off`. **185 exemplos** (de 161), sem regressão. PRD §7.3 e §12.4 atualizadas. |
 | 0.11 | Set 2026 | **Higiene do ciclo P2 (CHORE-05, #49)** — mudança só de docs, sem arquivo de runtime: novo **§8.5 Risco aceito — stack fora de suporte**, registrando a decisão de congelar a stack conforme o `README.md` (Rails 7.0.8.6 EOL desde 15/12/2025; PostgreSQL 12.3 EOL desde 14/11/2024) e o motivo — projeto legado/educacional, sem tráfego não-confiável; §12.4 ajustada (busca full-text remanejada para v0.12/US07; débito do `:memory_store` desvinculado da US08); §13 e §14. No GitHub: US08 (#31) saiu da milestone "P2 — Roadmap" com a decisão do PO no corpo da issue, US07 (#30) reescrita para `unaccent` + `pg_trgm` (o `pg_search` foi descartado: 2.4.0 exige `activerecord >= 8.0`, a 2.3.7 é a última compatível com Rails 7.0), US10 (#33) teve o item "decidir o modelo de papel" removido (a flag booleana `admin` já está em produção), AC transversal das #30–#33 corrigida de "~53" para **161 exemplos**, e a issue de métrica de uso do export/import criada (#50). **161 exemplos, sem regressão.** |
 | 0.10 | Set 2026 | **Importação de contatos em CSV (US06 — PR-B)**: rota `POST /contacts/importar` com campo `arquivo` (multipart) e serviço `ContactsCsvImporter` — cabeçalho pt-BR normalizado (minúsculo/sem acento/sem hífen, colunas desconhecidas ignoradas), BOM ignorado, linhas em branco puladas, exigência das colunas `nome` e `telefone`; **validação linha a linha reaproveitando as validações do model** (nenhuma regra duplicada) com relatório `Linha N: campo mensagem`; **HTTP 422** com o `index` re-renderizado e o resumo `3 de 4 linhas entraram. Veja o que ficou de fora.`; **RN01–RN04** (nunca sobrescreve/apaga, telefone duplicado é erro reportado, escopo em `current_user.contacts`); guardrails de **5 MB** (checado antes da leitura) e **UTF-8 obrigatório** (tempfile binário convertido antes do parse); **injeção de fórmula neutralizada** (`= + - @ \t \r` recebem prefixo `'`, sem duplicar quando já escapado — dívida que o §12.4 havia delegated ao PR-B); card de upload na listagem + alerta de erros; extração de `load_contacts` no controller para o `index` e o relatório compartilharem a mesma montagem; specs de serviço (32), request (14) e feature, incluindo **round-trip exportar→importar em outra conta**, **161 exemplos** (de 112). PRD §4.7, §6, §7.3, §10.1, §12.4 e §13 atualizados. US06 concluída. |
