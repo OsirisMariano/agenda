@@ -9,6 +9,12 @@ user = User.find_or_create_by!(email: "teste@exemplo.com") do |u|
   u.admin = true
 end
 
+# `find_or_create_by!` NÃO executa o bloco quando o registro já existe, então o
+# admin documentado no AGENTS.md ficaria sem confirmação em qualquer banco já
+# semeado e não conseguiria entrar. O `||` mantém a data original de quem já
+# tinha sido confirmado, e o update fica fora do bloco de propósito.
+user.update!(confirmed_at: user.confirmed_at || Time.current)
+
 puts "Usuário criado: #{user.email}"
 
 contatos = [

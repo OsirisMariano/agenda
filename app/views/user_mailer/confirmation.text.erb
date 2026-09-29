@@ -1,0 +1,9 @@
+Confirme seu e-mail
+
+Olá, <%= @user.name %>! Bem-vindo ao Agenda.
+
+Clique no link abaixo para confirmar seu e-mail e liberar o acesso (válido por 2 horas):
+
+<%= confirmar_email_url(token: @token, email: @user.email) %>
+
+Se você não criou esta conta, ignore este e-mail — nada acontece.
