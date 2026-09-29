@@ -4,7 +4,7 @@
 
 **Versão:** 0.11  
 **Data:** Setembro 2026  
-**Status:** Em desenvolvimento (v0.10 promovida em `main`; ciclo P2 aberto — v0.12 busca full-text)
+**Status:** Em desenvolvimento (v0.10 promovida em `main`; ciclo P2 aberto — v0.12 busca full-text em revisão)
 
 ---
 
@@ -323,6 +323,8 @@ end
 
 #### Lista de Contatos (`contacts/index.html.erb`)
 - Barra de busca com ordenação
+- Placeholder "Buscar por nome, e-mail ou telefone..." e a dica visível de que a busca ignora acentos e cai para o nome mais parecido em caso de erro de digitação (v0.12)
+- Estado de busca sem resultado sugere "um trecho menor, sem acento, ou confira a digitação" (v0.12)
 - Contador de contatos
 - Botão "Exportar (CSV)" (`btn-outline-success`, ícone `bi-download`) ao lado do "Novo Contato" — visível apenas para usuário logado
 - Card "Importar contatos (CSV)": input de arquivo (`accept: .csv,text/csv`), dica das colunas e do limite de 5 MB, botão "Importar" — sempre visível (sem JavaScript) para o usuário logado
@@ -330,6 +332,17 @@ end
 - Grid de cards com avatar, nome, telefone
 - Ações: Editar e Excluir por contato
 - Estado vazio: mensagem motivacional + CTA
+
+#### Busca de contatos (`Contact.search`, v0.12)
+- Sem gem nova: migration `EnableUnaccentAndPgTrgmOnContacts` habilita as extensions `unaccent` e `pg_trgm`, que já vêm no `postgresql-contrib` da imagem 12.3
+- Recorte por `user_id` herdado de `current_user.contacts`; o filtro de texto só enxerga contatos do dono
+- Acento nas duas direções: `unaccent(name) ILIKE unaccent(:termo)` e o inverso — "joao" acha "João" e "João" acha "Joao"
+- `ILIKE` também cobre `email`; `phone` casa por substring (não é sensible a acento)
+- Plano B para erro de digitação: `word_similarity(unaccent(:termo), unaccent(name|email)) >= Contact::FUZZY_THRESHOLD` (0.4)
+- Limiar 0.4 vem de medição, não de palpite: match exato 1.0, erro simples 0.60–0.667, plural 0.50. Transposição (`jocao` para "João") fica em 0.333–0.375 e fica de fora — a busca prefere não trazer o contato errado a trazer o errado com confiança alta
+- Termo vazio ou só com espaços devolve conjunto vazio, sem varrer a tabela
+- **Limite conhecido:** `unaccent()` é `STABLE` no PostgreSQL 12.3, então índice de expressão GIN é impossível (`functions in index expression must be marked IMMUTABLE`). O plano original da issue #30 previa `gin ((unaccent(name)) gin_trgm_ops)` e estava errado. O filtro roda sobre as linhas do usuário, com o índice de `user_id`; aceitável na escala de um app pessoal. Evoluir para busca indexada exigiria coluna desnormalizada mantida por trigger.
+
 
 #### Formulários
 - **Login:** E-mail, senha, checkbox "Lembrar-me" (cookie assinado com expiração de 2 semanas)
@@ -427,18 +440,18 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **161 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **185 exemplos, 0 falhas**
 - **Testes de model:**
   - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
-  - `contact_spec.rb` (validações de telefone, unicidade por usuário, busca, campos extras)
+  - `contact_spec.rb` (validações de telefone, unicidade por usuário, campos extras, busca com acento, erro de digitação, termo vazio, isolamento por usuário, uso do índice de `user_id` no `EXPLAIN`)
 - **Testes de controller:**
   - `users_controller_spec.rb` (cadastro, autorização de admin)
   - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
   - `contacts_controller_spec.rb` (CRUD, `show`, paginação, busca, campos extras, isolamento por usuário)
-- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos) + `contacts_import_spec.rb` (**import CSV**: ida e volta exportar→importar, relatório linha+campo, preservação de linhas válidas com inválida no meio, RN01/RN02/RN03, guardrails de 5 MB, encoding, colunas obrigatórias)
+- **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos) + `contacts_search_spec.rb` (**busca US07**: sem sessão redireciona, acento nas duas direções, erro de digitação, telefone, sem resultado, termo vazio devolvendo a listagem, isolamento por usuário) + `contacts_import_spec.rb` (**import CSV**: ida e volta exportar→importar, relatório linha+campo, preservação de linhas válidas com inválida no meio, RN01/RN02/RN03, guardrails de 5 MB, encoding, colunas obrigatórias)
 - **Testes de serviço:** `spec/services/contacts_csv_exporter_spec.rb` (cabeçalho, uma linha por contato, campos opcionais, escaping de vírgula/aspas/quebra de linha, acentos em UTF-8, BOM, separador, ordem preservada) + `spec/services/contacts_csv_importer_spec.rb` (parse normalizado, BOM ignorado, linhas em branco, reaproveita validações do model, duplicidade, acumulado de erros, arquivo só com cabeçalho, **neutralização de injeção de fórmula**)
 - **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo)
-- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**, **upload de CSV**, **relatório de erros na tela**, recusa de arquivo inválido), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
+- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**, **upload de CSV**, **relatório de erros na tela**, recusa de arquivo inválido), `contacts_search_spec.rb` (**busca pela tela**: acento, erro de digitação, mensagem orientando a busca sem acento, contato de outra conta invisível), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
 - **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
@@ -487,7 +500,7 @@ O arquivo `db/seeds.rb` cria:
 - ✅ Adicionar campos adicionais (e-mail, endereço e notas) aos contatos — **concluído em v0.7**
 - ✅ Exportar contatos em CSV — **concluído em v0.9**
 - ✅ Importar contatos em CSV (round-trip, relatório de erros, RN01–RN04) — **concluído em v0.10**
-- Implementar busca full-text — **planejado para v0.12 (US07, #30)**: `unaccent` + `pg_trgm` do próprio Postgres, **sem gem nova** (o `pg_search` foi descartado por incompatibilidade com a stack congelada — ver §8.5)
+- ✅ Implementar busca full-text — **entregue em v0.12 (US07, #30)**: `unaccent` + `pg_trgm` do próprio Postgres, **sem gem nova** (o `pg_search` foi descartado por incompatibilidade com a stack congelada — ver §8.5). Sem índice de expressão, porque `unaccent()` é `STABLE` no PG 12.3 — ver §7.3
 - ✅ Adicionar testes model completos — **concluído em v0.3**
 - ✅ Corrigir Turbo CDN — **concluído em v0.2** (linha removida, Turbo via importmap)
 - ✅ Remover arquivos desnecessários do repositório (`views`, `test_hook.rb`) — **concluído em v0.3**
@@ -525,6 +538,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.12 | Set 2026 | **Busca full-text tolerante a acentos e erro de digitação (US07 — #30)**: migration `20260929110000_enable_unaccent_and_pg_trgm_on_contacts` habilitando `unaccent` e `pg_trgm` (já presentes no `postgresql-contrib` da imagem 12.3, **zero gem nova**); scope `Contact.search` reescrito com acento nas duas direções, `ILIKE` sobre `name`/`email`, substring em `phone` e `word_similarity >= 0.4` como plano B para erro de digitação; termo vazio devolve vazio; isolamento por `user_id` herdado de `current_user.contacts`. UI: placeholder "Buscar por nome, e-mail ou telefone...", dica de tolerância a acento e mensagem de estado vazio orientando a nova digitação. **Correção de plano:** o `gin ((unaccent(name)) gin_trgm_ops)` previsto na issue é impossível — `unaccent()` é `STABLE`, não `IMMUTABLE`, no PostgreSQL 12.3, e a criação do índice é recusada; o recorte por `user_id` é o que segura a consulta, garantido por spec de `EXPLAIN` com `enable_seqscan = off`. **185 exemplos** (de 161), sem regressão. PRD §7.3 e §12.4 atualizadas. |
 | 0.11 | Set 2026 | **Higiene do ciclo P2 (CHORE-05, #49)** — mudança só de docs, sem arquivo de runtime: novo **§8.5 Risco aceito — stack fora de suporte**, registrando a decisão de congelar a stack conforme o `README.md` (Rails 7.0.8.6 EOL desde 15/12/2025; PostgreSQL 12.3 EOL desde 14/11/2024) e o motivo — projeto legado/educacional, sem tráfego não-confiável; §12.4 ajustada (busca full-text remanejada para v0.12/US07; débito do `:memory_store` desvinculado da US08); §13 e §14. No GitHub: US08 (#31) saiu da milestone "P2 — Roadmap" com a decisão do PO no corpo da issue, US07 (#30) reescrita para `unaccent` + `pg_trgm` (o `pg_search` foi descartado: 2.4.0 exige `activerecord >= 8.0`, a 2.3.7 é a última compatível com Rails 7.0), US10 (#33) teve o item "decidir o modelo de papel" removido (a flag booleana `admin` já está em produção), AC transversal das #30–#33 corrigida de "~53" para **161 exemplos**, e a issue de métrica de uso do export/import criada (#50). **161 exemplos, sem regressão.** |
 | 0.10 | Set 2026 | **Importação de contatos em CSV (US06 — PR-B)**: rota `POST /contacts/importar` com campo `arquivo` (multipart) e serviço `ContactsCsvImporter` — cabeçalho pt-BR normalizado (minúsculo/sem acento/sem hífen, colunas desconhecidas ignoradas), BOM ignorado, linhas em branco puladas, exigência das colunas `nome` e `telefone`; **validação linha a linha reaproveitando as validações do model** (nenhuma regra duplicada) com relatório `Linha N: campo mensagem`; **HTTP 422** com o `index` re-renderizado e o resumo `3 de 4 linhas entraram. Veja o que ficou de fora.`; **RN01–RN04** (nunca sobrescreve/apaga, telefone duplicado é erro reportado, escopo em `current_user.contacts`); guardrails de **5 MB** (checado antes da leitura) e **UTF-8 obrigatório** (tempfile binário convertido antes do parse); **injeção de fórmula neutralizada** (`= + - @ \t \r` recebem prefixo `'`, sem duplicar quando já escapado — dívida que o §12.4 havia delegated ao PR-B); card de upload na listagem + alerta de erros; extração de `load_contacts` no controller para o `index` e o relatório compartilharem a mesma montagem; specs de serviço (32), request (14) e feature, incluindo **round-trip exportar→importar em outra conta**, **161 exemplos** (de 112). PRD §4.7, §6, §7.3, §10.1, §12.4 e §13 atualizados. US06 concluída. |
 | 0.9 | Set 2026 | **Exportação de contatos em CSV (US06 — PR-A)**: serviço `ContactsCsvExporter` (`app/services/contacts_csv_exporter.rb`, primeiro diretório de services do projeto) com o contrato de cabeçalho `nome,telefone,e-mail,endereço,notas`, BOM UTF-8 para o Excel, escaping automático de vírgula/aspas/quebra de linha; rota `GET /contacts/exportar` (`contacts#export`, `on: :collection`) servindo `send_data` como anexo `contatos-AAAAMM-DD.csv`; escopo por usuário via `current_user.contacts.order(:name)` **ignorando paginação e filtro de busca**; botão "Exportar (CSV)" na listagem; specs de serviço, request e feature, **112 exemplos** (de 93). PRD §4.6, §6, §7.3, §10.1, §12.4 e §13 atualizados. A importação é o PR-B da US06. |
