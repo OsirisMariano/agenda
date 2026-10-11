@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.11  
+**Versão:** 0.13  
 **Data:** Setembro 2026  
-**Status:** Em desenvolvimento (v0.10 promovida em `main`; ciclo P2 aberto — v0.13 confirmação de e-mail)
+**Status:** Em desenvolvimento (v0.12: US07 e v0.13: US09 em `develop` aguardando promoção a `main`)
 
 ---
 

@@ -1,8 +1,8 @@
 # Backlog do Produto — Agenda
 
-**Versão:** 1.6
+**Versão:** 1.7
 **Data:** Setembro 2026
-**Fonte:** PRD v0.11 + Avaliação do Product Owner
+**Fonte:** PRD v0.13 + Avaliação do Product Owner
 **Ferramenta de gestão:** GitHub Projects (Board #65 — "Agenda — Backlog") + milestone "P2 — Roadmap"
 
 ---
@@ -61,9 +61,9 @@
 
 | # | User Story | Épico | SP | Status |
 |---|-----------|-------|----|--------|
-| US07 | Como usuário, quero busca que tolera **acentos e erros de digitação** | Produto | 5 | 🔵 **`In Progress` (#30)** — em revisão, **v0.12**. `unaccent` + `pg_trgm`, zero gem nova, sem índice de expressão (`unaccent()` é `STABLE` no PG 12.3) |
+| US07 | Como usuário, quero busca que tolera **acentos e erros de digitação** | Produto | 5 | 🟣 **`Review` (#30)** — código mergeado em `develop`, aguardando release (v0.12). `unaccent` + `pg_trgm`, zero gem nova, sem índice de expressão (`unaccent()` é `STABLE` no PG 12.3) |
 | US08 | Como dev, quero **upgrade Rails 7.0 → 8.1** | Infra | 13 | 🔒 **fora do ciclo (#31)** — stack congelada por decisão (PRD §8.5). Sem data prevista; se repriorizado, sobe para P0 |
-| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | 🔵 **`In Progress` (#32)** — em revisão, **v0.13**. Token hasheado, expiração 2h, login bloqueado até confirmar |
+| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | 🟣 **`Review` (#32)** — código mergeado em `develop`, aguardando release (v0.13). Token hasheado, expiração 2h, login bloqueado até confirmar |
 | US10 | Como admin, quero métricas básicas na área admin **que já existe** | Admin | 8 | 🟡 `Todo` (#33) — v0.14 |
 
 **Ordem da sprint (18 SP):** US07 → US09 → US10. São independentes; se o prazo apertar, a US10 escorrega sem afetar as outras — e é a única com item de gráfico, onde o escopo cresce sozinho.
