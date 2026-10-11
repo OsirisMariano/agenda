@@ -7,8 +7,15 @@ class SessionsController < ApplicationController
   def create
     user = User.find_by(email: params[:email])
     if user&.authenticate(params[:password])
-      sign_in(user, remember_me: params[:remember_me] == "1")
-      redirect_to(root_path, notice: "Login realizado com sucesso!")
+      # Senha certa, e-mail não confirmado: sem sessão. Quem chega aqui já
+      # provou a senha, então dizer que a conta existe não vaza nada.
+      if user.confirmed?
+        sign_in(user, remember_me: params[:remember_me] == "1")
+        redirect_to(root_path, notice: "Login realizado com sucesso!")
+      else
+        flash[:alert] = "Confirme seu e-mail antes de entrar."
+        redirect_to(reenviar_confirmacao_path)
+      end
     else
       flash[:alert] = "E-mail ou senha inválidos"
       render(:new)

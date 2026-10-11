@@ -14,8 +14,10 @@ class UsersController < ApplicationController
   def create
     @user = User.new(user_params)
     if @user.save
-      sign_in(@user)
-      redirect_to(root_path, notice: "Usuário cadastrado com sucesso!")
+      # Sem `sign_in` (US09): a conta só entra depois de confirmar o e-mail.
+      @user.create_confirmation_digest
+      UserMailer.confirmation(@user).deliver_now
+      redirect_to(entrar_path, notice: "Cadastro realizado! Confira seu e-mail para confirmar e entrar.")
     else
       render(:new, status: :unprocessable_entity)
     end

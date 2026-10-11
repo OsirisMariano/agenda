@@ -12,7 +12,7 @@ RSpec.describe(UsersController, type: :controller) do
 
   describe "POST #create" do
     context "com dados válidos" do
-      it "cria o usuário, faz login e redireciona" do
+      it "cria o usuário sem sessão, envia a confirmação e redireciona para o login" do
         expect do
           post(
             :create,
@@ -27,8 +27,29 @@ RSpec.describe(UsersController, type: :controller) do
           )
         end.to(change(User, :count).by(1))
 
-        expect(session[:user_id]).to(eq(User.last.id))
-        expect(response).to(redirect_to(root_path))
+        # US09: a conta não entra antes de confirmar o e-mail.
+        expect(session[:user_id]).to(be_nil)
+        expect(response).to(redirect_to(entrar_path))
+        expect(User.last).not_to(be_confirmed)
+      end
+
+      it "envia o e-mail de confirmação com o token" do
+        expect do
+          post(
+            :create,
+            params: {
+              user: {
+                name: "Novo",
+                email: "novo-confirmacao@exemplo.com",
+                password: "123456",
+                password_confirmation: "123456",
+              },
+            },
+          )
+        end.to(change { ActionMailer::Base.deliveries.count }.by(1))
+
+        expect(ActionMailer::Base.deliveries.last.to).to(eq(["novo-confirmacao@exemplo.com"]))
+        expect(User.last.confirmation_digest).to(be_present)
       end
     end
 

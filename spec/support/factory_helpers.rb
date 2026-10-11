@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 module FactoryHelpers
+  # Confirmado por padrão (US09): o login passa a exigir confirmação, e um
+  # helper que devolvesse usuário pendente quebraria todas as specs que
+  # autenticam de uma vez. O caminho não-confirmado se exercita com
+  # `create_user(confirmed_at: nil)`.
   def create_user(overrides = {})
     User.create!(
       {
@@ -8,6 +12,7 @@ module FactoryHelpers
         email: "teste_#{SecureRandom.hex(4)}@exemplo.com",
         password: "123456",
         password_confirmation: "123456",
+        confirmed_at: Time.current,
       }.merge(overrides),
     )
   end

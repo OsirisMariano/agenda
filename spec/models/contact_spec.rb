@@ -106,5 +106,114 @@ RSpec.describe(Contact, type: :model) do
 
       expect(described_class.search("98888")).to(include(Contact.find_by(name: "Ana Silva")))
     end
+
+    context "com accents (US07)" do
+      it "acha o contato sem digitar o acento" do
+        user = create_user
+        create_contact(user, name: "João Silva")
+
+        expect(described_class.search("joao")).to(include(Contact.find_by(name: "João Silva")))
+      end
+
+      it "acha o contato digitando o acento quando o dado não tem" do
+        user = create_user
+        create_contact(user, name: "Joao Silva")
+
+        expect(described_class.search("João")).to(include(Contact.find_by(name: "Joao Silva")))
+      end
+
+      it "ignora a caixa em ambas as direções" do
+        user = create_user
+        create_contact(user, name: "joão silva")
+
+        expect(described_class.search("JOÃO")).to(include(Contact.find_by(name: "joão silva")))
+      end
+
+      it "busca por e-mail com acento" do
+        user = create_user
+        create_contact(user, name: "Ana", email: "contato@mariao.com.br")
+
+        expect(described_class.search("mariao")).to(include(Contact.find_by(name: "Ana")))
+      end
+
+      it "acha por palavra no meio do nome" do
+        user = create_user
+        create_contact(user, name: "João Silva Santos")
+
+        expect(described_class.search("Silva")).to(include(Contact.find_by(name: "João Silva Santos")))
+      end
+    end
+
+    context "com erro de digitação (pg_trgm)" do
+      it "acha com um caractere trocado" do
+        user = create_user
+        create_contact(user, name: "Pedro Lima")
+
+        expect(described_class.search("pedri")).to(include(Contact.find_by(name: "Pedro Lima")))
+      end
+
+      it "acha no plural" do
+        user = create_user
+        create_contact(user, name: "João Silva")
+
+        expect(described_class.search("joaos")).to(include(Contact.find_by(name: "João Silva")))
+      end
+
+      it "não arrasta contato que só tem palavra parecida" do
+        user = create_user
+        create_contact(user, name: "Joana Prado")
+        create_contact(user, name: "Pedro Lima")
+
+        # "ana" é vizinha de "Joana" e "pedri" de "Pedro": a busca por um não
+        # pode devolver o outro.
+        expect(described_class.search("ana")).not_to(include(Contact.find_by(name: "Pedro Lima")))
+        expect(described_class.search("pedri")).not_to(include(Contact.find_by(name: "Joana Prado")))
+      end
+    end
+
+    context "termos degenerados" do
+      it "não devolve nada para termo vazio ou só com espaços" do
+        user = create_user
+        create_contact(user, name: "Ana Silva")
+
+        expect(described_class.search("")).to(be_empty)
+        expect(described_class.search("   ")).to(be_empty)
+        expect(described_class.search(nil)).to(be_empty)
+      end
+
+      it "não traz contato sem e-mail ao buscar por e-mail" do
+        user = create_user
+        create_contact(user, name: "Ana Silva")
+
+        expect(described_class.search("exemplo.com")).to(be_empty)
+      end
+    end
+
+    it "não vaza contato de outra conta" do
+      ana = create_user
+      bruno = create_user
+      create_contact(ana, name: "Silvia Zouza", phone: "(11) 90000-0001")
+      create_contact(bruno, name: "Carlos Pradp", phone: "(11) 90000-0002")
+
+      expect(ana.contacts.search("pradp")).to(be_empty)
+      expect(ana.contacts.search("zouza")).to(include(Contact.find_by(name: "Silvia Zouza")))
+    end
+
+    it "não varre a tabela inteira: o recorte por user_id usa índice" do
+      user = create_user
+      create_contact(user, name: "Ana Silva")
+
+      # `unaccent` é STABLE, não IMMUTABLE, então não pode entrar em índice de
+      # expressão. O que segura a consulta é o índice de user_id. Desligar o
+      # seq scan tira o tamanho da tabela da decisão: se o índice não servisse,
+      # o planner seria forçado a varrer de qualquer forma e a spec quebraria.
+      described_class.connection.execute("SET LOCAL enable_seqscan = off")
+      plan = described_class.connection
+        .select_values("EXPLAIN #{user.contacts.search("Silva").to_sql}")
+        .join(" ")
+
+      expect(plan).to(match(/Index Scan/))
+      expect(plan).not_to(match(/Seq Scan/))
+    end
   end
 end
