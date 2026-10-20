@@ -1,8 +1,8 @@
 # Backlog do Produto — Agenda
 
-**Versão:** 1.7
-**Data:** Setembro 2026
-**Fonte:** PRD v0.13 + Avaliação do Product Owner
+**Versão:** 1.10
+**Data:** Outubro 2026
+**Fonte:** PRD v0.14 + Avaliação do Product Owner
 **Ferramenta de gestão:** GitHub Projects (Board #65 — "Agenda — Backlog") + milestone "P2 — Roadmap"
 
 ---
@@ -12,14 +12,14 @@
 | Dimensão | Nota | Comentário |
 |----------|------|------------|
 | **Valor entregue** | ★★★★☆ | Problema central resolvido: CRUD privado de contatos com busca/ordenação/paginação |
-| **Qualidade técnica** | ★★★★☆ | 161 specs verdes, isolamento por usuário correto, strong params, Docker ok |
-| **Documentação** | ★★★★★ | PRD v0.11 alinhado ao código, histórico de versões disciplinado |
-| **Segurança** | ★★★★☆ | Recuperação de senha, rate limit e CI em place; falta confirmação de e-mail (US09). Risco de EOL da stack aceito e documentado (PRD §8.5) |
+| **Qualidade técnica** | ★★★★☆ | 255 specs verdes, isolamento por usuário correto, strong params, Docker ok |
+| **Documentação** | ★★★★★ | PRD v0.13 alinhado ao código, histórico de versões disciplinado |
+| **Segurança** | ★★★★☆ | Recuperação de senha, rate limit e confirmação de e-mail (US09, v0.13) em place; CI ativo. Risco de EOL da stack aceito e documentado (PRD §8.5) |
 | **Infra/CI** | ★★★★☆ | GitHub Actions (rspec + rubocop) verde nos PRs desde v0.4 |
 | **Débito técnico** | Baixo | Legado saneado em v0.8 (sem resíduo Devise, sem mocks de UI) |
 
 **Risco principal:** usuário que perde os dados fica preso à plataforma — mitigado pela US06 (exportar/importar).
-**Risco secundário:** sem confirmação de e-mail, contas falsas são fáceis de criar — endereçado pela US09 (P2).
+**Risco secundário:** ~~contas falsas fáceis de criar por falta de confirmação de e-mail~~ — **resolvido pela US09 (v0.13)**: token hasheado, expiração 2h, login bloqueado até confirmar.
 **Risco aceito (novo):** Rails 7.0.8.6 e PostgreSQL 12.3 estão fora de suporte oficial. Decisão de stack congelada, pois o projeto é legado/educacional — registrado no PRD §8.5.
 
 > **Atualização (set/2026, v1.6):** **Ciclo P1 encerrado e P2 aberto.** A release **v0.10** foi promovida (PR #48, 28/09, `Closes #29`) — a US06 está **100% entregue** e não há mais item de P0 ou P1 pendente. A auditoria entre este arquivo e o board #65 revelou quatro divergências, todas corrigidas no **CHORE-05 (#49)**:
@@ -38,8 +38,8 @@
 ## 2. Backlog Priorizado (para o dev contratado)
 
 > **Velocidade assumida:** ~15–20 SP/sprint (dev solo, sprint de 2 semanas).
-> **Total inicial:** ~63 SP → P0 + P1 fechados em 4 sprints. **P2 em curso:** 18 SP na sprint atual (US07 + US09 + US10) + 13 SP fora do ciclo (US08).
-> **Status pós-v0.11:** P0 e P1 fechados. A release **v0.10** foi promovida (PR #48, `Closes #29`).
+> **Total inicial:** ~63 SP → P0 + P1 fechados em 4 sprints. **P2 em curso:** US07 (v0.12) e US09 (v0.13) entregues; resta **US10 (8 SP) → v0.14**. Fora do ciclo: US08 (13 SP).
+> **Status pós-v0.13:** P0, P1 e a maior parte do P2 fechadas. Releases **v0.12** e **v0.13** promovidas (PR #55, `Closes #30 #32 #49`).
 
 ### 🔴 P0 — Crítico (Sprint 1–2)
 
@@ -61,12 +61,12 @@
 
 | # | User Story | Épico | SP | Status |
 |---|-----------|-------|----|--------|
-| US07 | Como usuário, quero busca que tolera **acentos e erros de digitação** | Produto | 5 | 🟣 **`Review` (#30)** — código mergeado em `develop`, aguardando release (v0.12). `unaccent` + `pg_trgm`, zero gem nova, sem índice de expressão (`unaccent()` é `STABLE` no PG 12.3) |
+| US07 | Como usuário, quero busca que tolera **acentos e erros de digitação** | Produto | 5 | ✅ **v0.12 (#30, PR #55)** — `unaccent` + `pg_trgm`, zero gem nova, sem índice de expressão (`unaccent()` é `STABLE` no PG 12.3) |
 | US08 | Como dev, quero **upgrade Rails 7.0 → 8.1** | Infra | 13 | 🔒 **fora do ciclo (#31)** — stack congelada por decisão (PRD §8.5). Sem data prevista; se repriorizado, sobe para P0 |
-| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | 🟣 **`Review` (#32)** — código mergeado em `develop`, aguardando release (v0.13). Token hasheado, expiração 2h, login bloqueado até confirmar |
-| US10 | Como admin, quero métricas básicas na área admin **que já existe** | Admin | 8 | 🟡 `Todo` (#33) — v0.14 |
+| US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | ✅ **v0.13 (#32, PR #55)** — token hasheado, expiração 2h, login bloqueado até confirmar |
+| US10 | Como admin, quero métricas básicas na área admin **que já existe** | Admin | 8 | 🟣 **`Review` (#33)** — código na branch `feature/us10-metricas-admin`, aguardando release (v0.14). US1 (P1): três números em `/usuarios` — `AdminMetrics` (PORO), série de 8 semanas com zeros preenchidos, só contagens sob `require_admin`, sem gem nova |
 
-**Ordem da sprint (18 SP):** US07 → US09 → US10. São independentes; se o prazo apertar, a US10 escorrega sem afetar as outras — e é a única com item de gráfico, onde o escopo cresce sozinho.
+**Ordem da sprint:** US07 → US09 → US10. As duas primeiras já entregues (v0.12 e v0.13); **US10 é a última do ciclo** — e é a única com item de gráfico, onde o escopo cresce sozinho.
 
 > **Mudanças de escopo aprovadas no CHORE-05:**
 > - **US07** deixa de usar `pg_search`. A gem 2.4.0 exige `activerecord >= 8.0`; a 2.3.7 é a última compatível com Rails 7.0 — pinar uma versão congelada contradiz a decisão de stack. Vai de `unaccent` + `pg_trgm`, que já vêm no `postgresql-contrib` da imagem `postgres:12.3`.
@@ -77,7 +77,7 @@
 
 ## 3. Critério de Aceite Transversal (todas as USs)
 
-- Specs atualizadas na mesma PR — cobertura não pode regredir dos **161 exemplos atuais**
+- Specs atualizadas na mesma PR — cobertura não pode regredir dos **255 exemplos atuais**
 - PRD atualizado na mesma PR (seção correspondente + histórico de versões)
 - `bundle exec rubocop` e `RAILS_ENV=test bundle exec rspec` verdes (no container: `docker compose exec web sh -c '...'`) antes do PR
 
@@ -103,8 +103,8 @@
    - Consequência aceita: o filtro de texto é um *filter* sobre as linhas do usuário, não uma busca indexada. Com a escala de um app pessoal (dezenas a milhares de contatos por conta) o custo é irrelevante. Se um dia virar gargalo, o caminho é uma coluna `name_search` já sem acento mantida por trigger, não gambiarra de índice.
 2. **US09 — confirmação de e-mail (v0.13, entregue):** reusou o mailer da US01. As duas armadilhas previstas foram tratadas: `create_user` (`spec/support/factory_helpers.rb`) produz usuário confirmado por padrão, com override `confirmed_at: nil`; e `db/seeds.rb` ganhou `user.update!(confirmed_at: user.confirmed_at || Time.current)` **fora** do bloco, porque `find_or_create_by!` não executa o bloco em registro existente. A terceira armadilha não estava prevista e era a pior: sem backfill, a coluna nova nascia `NULL` para toda conta que já existia e o gate de login trancaria o mundo. A migration faz `UPDATE users SET confirmed_at = created_at WHERE confirmed_at IS NULL`.
    - **Dívida deixada de propósito:** `POST /reenviar-confirmacao` sem rate limit. A receita já existe na US03 (rack-attack, 5/IP/min no login); o natural é 3/IP/min aqui. Saiu do escopo por simplicidade, não por ser inofensivo — ver §12.4 do PRD.
-3. **US10 — métricas (v0.14):** três números na tela de `/usuarios` que já existe. Reaproveitar o `require_admin` atual; nenhuma gem de papel nem de gráfico.
-4. **CHORE-05 (#49) —** implementação já encerrada na PR #51; a issue só fecha na promoção a `main`.
+3. **US10 — métricas (v0.14):** três números na tela de `/usuarios` que já existe. Reaproveitar o `require_admin` atual; nenhuma gem de papel nem de gráfico. **US1 (P1) entregue** na branch `feature/us10-metricas-admin`: `AdminMetrics` (`app/services/admin_metrics.rb`), série de 8 semanas naturais (segunda→domingo), zeros preenchidos em Ruby, barras em CSS inline, **255 exemplos** (de 230). Spec Kit em `specs/001-admin-metrics/`.
+4. **CHORE-05 (#49) —** ✅ **fechada na PR de release (PR #55)** junto com #30 e #32.
 5. **Métrica de uso do export/import (#50):** decidir o vCard com dado na mão, antes ou durante o ciclo.
 
 ---
@@ -113,6 +113,8 @@
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 1.10 | Out 2026 | **Métricas admin entregues (US10 — US1, #33, v0.14)** — `AdminMetrics` (PORO) com três números em `/usuarios`: usuários cadastrados, contatos totais e série de 8 semanas naturais (segunda→domingo, semana corrente parcial), agrupada em SQL e com zeros preenchidos em Ruby (série sempre com 8 pontos); só contagens agregadas sob `require_admin`, sem gem nova nem migration. Cobertura 230 → **255 exemplos**. Spec Kit em `specs/001-admin-metrics/`. US10 → 🟣 `Review`; ainda fecha só na release `develop → main`. Fonte PRD v0.14 |
+| 1.9 | Out 2026 | **Sincronização pós-release v0.13** — PR #55 (`develop → main`, 11/10/2026) promoveu v0.12 (US07, #30) e v0.13 (US09, #32); #30, #32 e #49 fechadas. US07 e US09 viram ✅ nas tabelas; AC transversal corrigido de 161 → **230 exemplos**; avaliação (specs, docs, risco de contas falsas) e status da sprint atualizados para pós-v0.13; cabeçalho corrigido de 1.7 → 1.9 (o bump 1.8 tinha ficado só no histórico). Fonte PRD v0.13 |
 | 1.8 | Set 2026 | **Confirmação de e-mail entregue (US09, #32, v0.13)** — migration com `confirmed_at`/`confirmation_digest`/`confirmation_sent_at` e **backfill `confirmed_at = created_at`** (sem ele o gate trancaria toda conta existente — o pior jeito de ganhar recurso: quebrando o que funcionava); mailer espelhando a US01; rotas públicas de confirmar e reenviar; login bloqueado até confirmar; `create_user` confirmado por padrão e `db/seeds.rb` com `update!` fora do bloco. Link único e simples: o `GET` confirma direto, sem tela intermediária. **Dívida conscientemente deixada:** reenvio sem rate limit (§12.4 do PRD) — mesma receita do rack-attack da US03, 3 linhas. Cobertura 185 → **230 exemplos**. Fonte PRD v0.13 |
 | 1.7 | Set 2026 | **Busca full-text entregue (US07, #30, v0.12)** — migration habilitando `unaccent` + `pg_trgm` (já no `postgresql-contrib`, zero gem), scope `Contact.search` com acento nas duas direções, `ILIKE` em nome/e-mail, substring no telefone e `word_similarity >= 0.4` para erro de digitação; UI com dica de tolerância a acento. **Plano corrigido:** o índice de expressão `gin ((unaccent(name)) gin_trgm_ops)` da issue é impossível no PostgreSQL 12.3 (`unaccent()` é `STABLE`, não `IMMUTABLE`) — o recorte passa a ser garantido pelo índice de `user_id`, com spec de `EXPLAIN` e `enable_seqscan = off`. Cobertura 161 → **185 exemplos**. Fonte PRD v0.12 |
 | 1.6 | Set 2026 | **Higiene do ciclo P2 (CHORE-05, #49)** — release v0.10 promovida (PR #48), ciclo P1 encerrado. Stack **congelada por decisão** conforme o README: US08 (#31) saiu da milestone e do ciclo (e os alvos 7.1/7.2 já estavam EOL — se repriorizada, o alvo passa a ser 8.1 e a estimativa vai a ~18 SP). US07 (#30) reescrita: `pg_search` **descartado** (2.4.0 exige `activerecord >= 8.0`), vai de `unaccent` + `pg_trgm`. US10 (#33): decisão de papel **já resolvida** (flag booleana `admin` em produção). AC transversal das #30–#33 corrigida de ~53 para 161. Issue de métrica criada (#50). Board: #30/#32/#33 em `Todo`, PR #42 removido, milestone #4 apagada, #5 reescrita. Fonte PRD v0.11 |

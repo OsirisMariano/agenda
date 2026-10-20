@@ -5,6 +5,7 @@ class UsersController < ApplicationController
 
   def index
     @users = User.all
+    @metrics = AdminMetrics.new
   end
 
   def new
