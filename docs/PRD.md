@@ -3,8 +3,8 @@
 ## Agenda - Sistema de Gestão de Contatos
 
 **Versão:** 0.13  
-**Data:** Setembro 2026  
-**Status:** Em desenvolvimento (v0.12: US07 e v0.13: US09 em `develop` aguardando promoção a `main`)
+**Data:** Outubro 2026  
+**Status:** v0.12 (US07) e v0.13 (US09) publicadas em `main` (PR #55, 11/10/2026). Próxima entrega: v0.14 (US10, #33)
 
 ---
 
@@ -543,7 +543,7 @@ O projeto **Agenda** entrega um sistema funcional de gestão de contatos com:
 - ✅ Importação de contatos em CSV (round-trip sem aprisionamento, relatório linha+campo, RN01–RN04, injeção de fórmula neutralizada)
 - ✅ Privacidade garantida (usuários veem apenas seus dados)
 - ✅ Proteção contra brute-force no login (rate limit rack-attack)
-- ⬜ Busca tolerante a acentos e erros de digitação — **planejado para v0.12 (US07, #30)**
+- ✅ Busca tolerante a acentos e erros de digitação — **entregue em v0.12 (US07, #30)**
 - ✅ Deploy via Docker configurado
 - ✅ Estrutura para testes com RSpec
 
