@@ -2,9 +2,9 @@
 
 ## Agenda - Sistema de Gestão de Contatos
 
-**Versão:** 0.13  
+**Versão:** 0.14  
 **Data:** Outubro 2026  
-**Status:** v0.12 (US07) e v0.13 (US09) publicadas em `main` (PR #55, 11/10/2026). Próxima entrega: v0.14 (US10, #33)
+**Status:** v0.14 (US10) em `develop` aguardando promoção a `main`. Publicadas: v0.12 (US07) e v0.13 (US09) em `main` (PR #55, 11/10/2026)
 
 ---
 
@@ -209,6 +209,21 @@ Fecha a US06 e completa o par bidirecional do §4.6: o usuário exporta, sai da 
 - **Injeção de fórmula neutralizada (§12.4):** valor de célula começando com `=`, `+`, `-`, `@`, tab ou CR recebe o prefixo `'` no parse — vetor de entrada do CSV de terceiros. Valor já escapado não recebe um segundo prefixo, preservando o round-trip
 - **UI:** card "Importar contatos (CSV)" na listagem com input de arquivo, dica das colunas e do limite, e o alerta de erros logo abaixo
 - **Fora de escopo (v1):** vCard (`.vcf`), mapeamento de colunas por tela, escolha de como tratar duplicados (hoje: sempre erro) e importação em lote de arquivos
+
+### 4.8 Métricas na Área Admin 📊 (US10 — US1)
+
+Adiciona três números à tela de usuários que já existe (`GET /usuarios`). **Não cria área admin nem sistema de papéis** — a flag booleana `admin` e o `require_admin` já estão em produção desde a v0.x; esta US só acrescenta informação a uma tela pronta.
+
+- **Rota:** `GET /usuarios` → `users#index` (mesma rota; sem controller novo)
+- **Serviço:** `AdminMetrics` (`app/services/admin_metrics.rb`) — PORO somente-leitura, sem ActiveModel, no padrão de `ContactsCsvExporter`. Expõe `users_count`, `contacts_count`, `weekly_contacts` (array de 8 pontos `{ label:, total: }`) e `max_weekly_total`
+- **Três números:** usuários cadastrados (`User.count`), contatos totais (`Contact.count`, visão **global** de plataforma) e série de contatos criados por semana
+- **Série de 8 semanas:** `WEEKS = 8`; semanas naturais de **segunda a domingo** (`beginning_of_week`), terminando na **semana corrente** (parcial — conta as criações até o momento do carregamento). Agrupamento por `date_trunc('week', created_at)` em **SQL agregado** (`GROUP BY`), alinhado ao `beginning_of_week` do Ruby; contatos mais antigos que a janela ficam de fora
+- **Semanas vazias = 0:** o `GROUP BY` não cria linha para período sem dados, então os zeros são **preenchidos em Ruby** montando os 8 intervalos pré-calculados — a série tem sempre **8 pontos**, inclusive com 0 contatos no sistema (sem divisão por zero: `max_weekly_total` é 0 e as barras ficam vazias)
+- **Autorização:** coberta pelo `before_action :require_admin, only: [:index]` já existente — não-admin (logado ou não) é redirecionado para a home com "Acesso negado." e **nenhum número é renderizado** (a view não executa). Nenhum arquivo de runtime de autorização é criado ou alterado
+- **Dados expostos:** apenas **contagens agregadas** — nenhum dado individual de contato (nome, telefone, e-mail, endereço, notas) de outros usuários sai na tela
+- **UI:** dois cards de total (Bootstrap) + bloco "Contatos por semana" com 8 colunas (valor numérico + barra proporcional em **CSS inline**, altura relativa ao maior total). **Sem biblioteca de gráfico** (Chartkick, ApexCharts fora) — a série é informação, o desenho é secundário. A listagem de usuários existente (nome, e-mail, badge Admin/Padrão) permanece inalterada
+- **Escopo (esta US1):** apenas os três números. Métricas por usuário, endpoint JSON/API, exportação das métricas e períodos configuráveis ficam para depois
+
 
 ---
 
@@ -456,7 +471,7 @@ bundle exec rubocop
 ## 10. Testes
 
 ### 10.1 Cobertura Atual
-- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **230 exemplos, 0 falhas**
+- **RSpec configurado** (rspec-rails 7.1.1) com shoulda-matchers — **255 exemplos, 0 falhas**
 - **Testes de model:**
   - `user_spec.rb` (associações, validações, `admin?`, **digest de recuperação**, **autenticação por token**, **expiração em 2h**)
   - `user_spec.rb` (validações, `#admin?`, recuperação de senha, **confirmação de e-mail**: `confirmed?`, digest hasheado, expiração de 2h, `#confirm` limpando o digest)
@@ -466,9 +481,9 @@ bundle exec rubocop
   - `sessions_controller_spec.rb` (login via session/cookie, erro, logout)
   - `contacts_controller_spec.rb` (CRUD, `show`, paginação, busca, campos extras, isolamento por usuário)
 - **Testes de request:** `sessions_spec.rb` (comportamento do cookie "Lembrar-me") + `password_resets_spec.rb` (POST genérico, PATCH válido/confirmação divergente/senha vazia/token inválido/token expirado/e-mail inexistente) + `confirmations_spec.rb` (**confirmação de e-mail**: confirmar sem sessão, token expirado, token inválido, e-mail inexistente, link reusado, link de conta já confirmada, reenvio gerando token novo, resposta genérica, reenvio que não confirma, gate de login sem sessão e sem cookie de lembrar-me) + `rack_attack_spec.rb` (429 na 6ª tentativa, liberação da janela, rotas não afetadas) + `contacts_export_spec.rb` (**export CSV**: redirecionamento sem sessão, content-type, anexo com nome datado, escopo por usuário, ordenação, exportação ignorando a paginação, usuário sem contatos, BOM, acentos) + `contacts_search_spec.rb` (**busca US07**: sem sessão redireciona, acento nas duas direções, erro de digitação, telefone, sem resultado, termo vazio devolvendo a listagem, isolamento por usuário) + `contacts_import_spec.rb` (**import CSV**: ida e volta exportar→importar, relatório linha+campo, preservação de linhas válidas com inválida no meio, RN01/RN02/RN03, guardrails de 5 MB, encoding, colunas obrigatórias)
-- **Testes de serviço:** `spec/services/contacts_csv_exporter_spec.rb` (cabeçalho, uma linha por contato, campos opcionais, escaping de vírgula/aspas/quebra de linha, acentos em UTF-8, BOM, separador, ordem preservada) + `spec/services/contacts_csv_importer_spec.rb` (parse normalizado, BOM ignorado, linhas em branco, reaproveita validações do model, duplicidade, acumulado de erros, arquivo só com cabeçalho, **neutralização de injeção de fórmula**)
+- **Testes de serviço:** `spec/services/contacts_csv_exporter_spec.rb` (cabeçalho, uma linha por contato, campos opcionais, escaping de vírgula/aspas/quebra de linha, acentos em UTF-8, BOM, separador, ordem preservada) + `spec/services/contacts_csv_importer_spec.rb` (parse normalizado, BOM ignorado, linhas em branco, reaproveita validações do model, duplicidade, acumulado de erros, arquivo só com cabeçalho, **neutralização de injeção de fórmula**) + `spec/services/admin_metrics_spec.rb` (**métricas US10**: totais corretos, série sempre com 8 pontos, semana vazia = 0, contato da semana corrente, contato de 2 semanas atrás no ponto certo, contatos fora da janela ignorados, agrupamento da mesma semana, soma da série ≤ total, `max_weekly_total`, cenário de 0 contatos)
 - **Testes de mailer:** `user_mailer_spec.rb` (assunto, destinatário, remetente, nome e link com token no corpo, tanto na recuperação de senha quanto na confirmação de e-mail)
-- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**, **upload de CSV**, **relatório de erros na tela**, recusa de arquivo inválido), `confirmations_spec.rb` (**confirmação pela tela**: cadastro que não entra, liberação após confirmar, link expirado, reenvio pela tela, formulário que não entrega link a e-mail inexistente, link reusado), `contacts_search_spec.rb` (**busca pela tela**: acento, erro de digitação, mensagem orientando a busca sem acento, contato de outra conta invisível), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
+- **Testes de feature:** `authentication_spec.rb`, `contacts_spec.rb` (CRUD completo, campos extras, paginação, **botão de exportação**, **upload de CSV**, **relatório de erros na tela**, recusa de arquivo inválido), `confirmations_spec.rb` (**confirmação pela tela**: cadastro que não entra, liberação após confirmar, link expirado, reenvio pela tela, formulário que não entrega link a e-mail inexistente, link reusado), `contacts_search_spec.rb` (**busca pela tela**: acento, erro de digitação, mensagem orientando a busca sem acento, contato de outra conta invisível), `admin_metrics_spec.rb` (**métricas admin pela tela**: cards com os números, série de 8 semanas, listagem existente preservada, 0 contatos sem erro, não-admin redirecionado sem números), `password_reset_spec.rb` e `footer_spec.rb` (rodapé sem mocks, logout pelo rodapé) — `rack_test`
 - **Factories:** helpers `create_user`/`create_contact` em `spec/support/factory_helpers.rb`
 - **Capybara** configurado em `spec/rails_helper.rb` (`require "capybara/rails"` + `"capybara/rspec"`)
 - **Selenium WebDriver** para testes browser (driver `selenium_chrome_headless` para JS, `rack_test` como padrão)
@@ -544,6 +559,8 @@ O projeto **Agenda** entrega um sistema funcional de gestão de contatos com:
 - ✅ Privacidade garantida (usuários veem apenas seus dados)
 - ✅ Proteção contra brute-force no login (rate limit rack-attack)
 - ✅ Busca tolerante a acentos e erros de digitação — **entregue em v0.12 (US07, #30)**
+- ✅ Confirmação de e-mail no cadastro — **entregue em v0.13 (US09, #32)**
+- ✅ Métricas básicas na área admin (usuários, contatos totais e série de 8 semanas) — **entregue em v0.14 (US10, #33)**
 - ✅ Deploy via Docker configurado
 - ✅ Estrutura para testes com RSpec
 
@@ -557,6 +574,7 @@ O sistema está funcional para uso básico, com débito técnico documentado par
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 0.14 | Out 2026 | **Métricas básicas na área admin (US10 — US1, #33)**: três números na tela `/usuarios` que **já existia** — sem área admin nova, sem sistema de papéis, sem gem nova. Novo PORO `AdminMetrics` (`app/services/admin_metrics.rb`, padrão de `ContactsCsvExporter`) com `users_count`, `contacts_count`, `weekly_contacts` e `max_weekly_total`; série de **8 semanas naturais (segunda→domingo)** terminando na **semana corrente parcial**, agrupada por `date_trunc('week', created_at)` em SQL agregado e com **zeros preenchidos em Ruby** (o `GROUP BY` não cria linha para semana vazia — a série tem sempre 8 pontos, inclusive com 0 contatos, sem divisão por zero); expõe **apenas contagens agregadas** (nenhum dado individual de contato); autorização reaproveita o `before_action :require_admin` existente (não-admin redirecionado, **nenhum número vazado**). UI: dois cards de total + bloco "Contatos por semana" com 8 colunas (valor + barra em **CSS inline**, sem biblioteca de gráfico); listagem de usuários existente inalterada. **Sem migration** (feature somente-leitura) e **sem mudança de seed**. Specs: serviço (14), controller estendido (+6) e feature de tela (4) — **255 exemplos** (de 230), sem regressão. PRD §4.8 (nova), §10.1, §13 e §14 atualizados; `specs/001-admin-metrics/` (spec, plan, research, data-model, contracts, quickstart) via Spec Kit. Escopo desta entrega: só a US1 (P1). |
 | 0.13 | Set 2026 | **Confirmação de e-mail no cadastro (US09 — #32)**: migration `20260929130000_add_confirmation_to_users` com `confirmed_at`, `confirmation_digest` e `confirmation_sent_at` (espelhando `reset_digest`/`reset_sent_at` da US01) **e backfill `UPDATE users SET confirmed_at = created_at WHERE confirmed_at IS NULL`** — sem ele o gate de login trancaria toda conta que já existia; `UserMailer#confirmation` com views html/text; rotas públicas `GET /confirmar-email` e `GET|POST /reenviar-confirmacao`; `ConfirmationsController` com token hasheado, expiração de 2h (`User::CONFIRMATION_EXPIRATION`), link de uso único (`#confirm` limpa o digest no mesmo `update!`) e resposta genérica no reenvio para não virar oráculo de contas; **login bloqueado até confirmar**, sem sessão nem cookie de lembrar-me; `create_user` passou a produzir usuário confirmado por padrão (override `confirmed_at: nil`) e `db/seeds.rb` ganhou `update!` fora do bloco do `find_or_create_by!`; tela de reenvio + link "Não confirmei meu e-mail" no login. **Duas specs existentes mudaram de sentido** (o cadastro não abre mais sessão): `authentication_spec.rb` e `users_controller_spec.rb`. **230 exemplos** (de 185), sem regressão. PRD §4.1, §5.1, §12.4 e histórico atualizados. |
 | 0.12 | Set 2026 | **Busca full-text tolerante a acentos e erro de digitação (US07 — #30)**: migration `20260929110000_enable_unaccent_and_pg_trgm_on_contacts` habilitando `unaccent` e `pg_trgm` (já presentes no `postgresql-contrib` da imagem 12.3, **zero gem nova**); scope `Contact.search` reescrito com acento nas duas direções, `ILIKE` sobre `name`/`email`, substring em `phone` e `word_similarity >= 0.4` como plano B para erro de digitação; termo vazio devolve vazio; isolamento por `user_id` herdado de `current_user.contacts`. UI: placeholder "Buscar por nome, e-mail ou telefone...", dica de tolerância a acento e mensagem de estado vazio orientando a nova digitação. **Correção de plano:** o `gin ((unaccent(name)) gin_trgm_ops)` previsto na issue é impossível — `unaccent()` é `STABLE`, não `IMMUTABLE`, no PostgreSQL 12.3, e a criação do índice é recusada; o recorte por `user_id` é o que segura a consulta, garantido por spec de `EXPLAIN` com `enable_seqscan = off`. **185 exemplos** (de 161), sem regressão. PRD §7.3 e §12.4 atualizadas. |
 | 0.11 | Set 2026 | **Higiene do ciclo P2 (CHORE-05, #49)** — mudança só de docs, sem arquivo de runtime: novo **§8.5 Risco aceito — stack fora de suporte**, registrando a decisão de congelar a stack conforme o `README.md` (Rails 7.0.8.6 EOL desde 15/12/2025; PostgreSQL 12.3 EOL desde 14/11/2024) e o motivo — projeto legado/educacional, sem tráfego não-confiável; §12.4 ajustada (busca full-text remanejada para v0.12/US07; débito do `:memory_store` desvinculado da US08); §13 e §14. No GitHub: US08 (#31) saiu da milestone "P2 — Roadmap" com a decisão do PO no corpo da issue, US07 (#30) reescrita para `unaccent` + `pg_trgm` (o `pg_search` foi descartado: 2.4.0 exige `activerecord >= 8.0`, a 2.3.7 é a última compatível com Rails 7.0), US10 (#33) teve o item "decidir o modelo de papel" removido (a flag booleana `admin` já está em produção), AC transversal das #30–#33 corrigida de "~53" para **161 exemplos**, e a issue de métrica de uso do export/import criada (#50). **161 exemplos, sem regressão.** |
