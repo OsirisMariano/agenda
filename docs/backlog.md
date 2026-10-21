@@ -1,8 +1,8 @@
 # Backlog do Produto — Agenda
 
-**Versão:** 1.11
+**Versão:** 1.12
 **Data:** Outubro 2026
-**Fonte:** PRD v0.14 + Avaliação do Product Owner
+**Fonte:** PRD v0.15 + Avaliação do Product Owner
 **Ferramenta de gestão:** GitHub Projects (Board #65 — "Agenda — Backlog") + milestone "P2 — Roadmap"
 
 ---
@@ -12,7 +12,7 @@
 | Dimensão | Nota | Comentário |
 |----------|------|------------|
 | **Valor entregue** | ★★★★☆ | Problema central resolvido: CRUD privado de contatos com busca/ordenação/paginação |
-| **Qualidade técnica** | ★★★★☆ | 255 specs verdes, isolamento por usuário correto, strong params, Docker ok |
+| **Qualidade técnica** | ★★★★☆ | 275 specs verdes, isolamento por usuário correto, strong params, Docker ok |
 | **Documentação** | ★★★★★ | PRD v0.13 alinhado ao código, histórico de versões disciplinado |
 | **Segurança** | ★★★★☆ | Recuperação de senha, rate limit e confirmação de e-mail (US09, v0.13) em place; CI ativo. Risco de EOL da stack aceito e documentado (PRD §8.5) |
 | **Infra/CI** | ★★★★☆ | GitHub Actions (rspec + rubocop) verde nos PRs desde v0.4 |
@@ -65,9 +65,9 @@
 | US08 | Como dev, quero **upgrade Rails 7.0 → 8.1** | Infra | 13 | 🔒 **fora do ciclo (#31)** — stack congelada por decisão (PRD §8.5). Sem data prevista; se repriorizado, sobe para P0 |
 | US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | ✅ **v0.13 (#32, PR #55)** — token hasheado, expiração 2h, login bloqueado até confirmar |
 | US10 | Como admin, quero métricas básicas na área admin **que já existe** | Admin | 8 | ✅ **v0.14 (#33, PR #57)** — três números em `/usuarios` — `AdminMetrics` (PORO), série de 8 semanas com zeros preenchidos, só contagens sob `require_admin`, sem gem nova. Publicada em `main` 20/10/2026 |
-| US11 | Como admin, quero uma **área admin completa** com navegação (layout sidebar escura) | Admin | 13 | 🟡 **`Todo`** — v0.15. Casca admin (sidebar dark + topbar + breadcrumb) + dashboard `/admin` + link "Admin" na navbar. **Inspirado** no AdminLTE 3, reimplementado em Bootstrap 5 + ERB + CSS puro (zero jQuery/BS4/JS novo). Extrai partial de métricas |
+| US11 | Como admin, quero uma **área admin completa** com navegação (layout sidebar escura) | Admin | 13 | 🟣 **`Review`** — v0.15. Casca admin (sidebar dark + topbar + breadcrumb) + dashboard `/admin` + link "Admin" na navbar (só admin). **Inspirado** no AdminLTE 3, reimplementado em Bootstrap 5 + ERB + CSS puro (zero jQuery/BS4/JS novo, collapse CSS-only). Partial de métricas extraído. **275 exemplos** (de 255). Fecha só na release `develop → main` |
 
-**Ordem da sprint:** US07 → US09 → US10 **entregues** (v0.12, v0.13 e v0.14). **Próxima: US11 (área admin, v0.15).**
+**Ordem da sprint:** US07 → US09 → US10 → US11 **entregues** (v0.12, v0.13, v0.14 e v0.15, esta em `Review`). **Ciclo P2 fechado.**
 
 > **Mudanças de escopo aprovadas no CHORE-05:**
 > - **US07** deixa de usar `pg_search`. A gem 2.4.0 exige `activerecord >= 8.0`; a 2.3.7 é a última compatível com Rails 7.0 — pinar uma versão congelada contradiz a decisão de stack. Vai de `unaccent` + `pg_trgm`, que já vêm no `postgresql-contrib` da imagem `postgres:12.3`.
@@ -78,7 +78,7 @@
 
 ## 3. Critério de Aceite Transversal (todas as USs)
 
-- Specs atualizadas na mesma PR — cobertura não pode regredir dos **255 exemplos atuais**
+- Specs atualizadas na mesma PR — cobertura não pode regredir dos **275 exemplos atuais**
 - PRD atualizado na mesma PR (seção correspondente + histórico de versões)
 - `bundle exec rubocop` e `RAILS_ENV=test bundle exec rspec` verdes (no container: `docker compose exec web sh -c '...'`) antes do PR
 
@@ -107,7 +107,7 @@
 3. **US10 — métricas (v0.14, entregue):** três números na tela de `/usuarios` que já existe. Reaproveitou o `require_admin` atual; nenhuma gem de papel nem de gráfico. `AdminMetrics` (`app/services/admin_metrics.rb`), série de 8 semanas naturais (segunda→domingo), zeros preenchidos em Ruby, barras em CSS inline, **255 exemplos** (de 230). Spec Kit em `specs/001-admin-metrics/`. **Publicada em `main` (PR #57, 20/10/2026); #33 fechada.**
 4. **CHORE-05 (#49) —** ✅ **fechada na PR de release (PR #55)** junto com #30 e #32.
 5. **Métrica de uso do export/import (#50):** decidir o vCard com dado na mão, antes ou durante o ciclo.
-6. **US11 — área admin (v0.15, próxima):** casca admin com sidebar escura + topbar + breadcrumb, dashboard `/admin` e link "Admin" na navbar (só para admins). **Inspirada** no AdminLTE 3, reimplementada no stack atual (Bootstrap 5 + ERB + CSS puro) — zero jQuery, zero BS4, zero JS novo, sem lib de gráfico. Extrai partial de métricas reusado em `/admin` e `/usuarios`. Spec Kit em `specs/002-admin-area/`.
+6. **US11 — área admin (v0.15, entregue em `Review`):** casca admin com sidebar escura + topbar + breadcrumb, dashboard `/admin` e link "Admin" na navbar (só para admins). **Inspirada** no AdminLTE 3, reimplementada no stack atual (Bootstrap 5 + ERB + CSS puro) — zero jQuery, zero BS4, zero JS novo (collapse CSS-only), sem lib de gráfico. Partial de métricas extraído e reusado em `/admin` e `/usuarios`. **275 exemplos** (de 255). Spec Kit em `specs/002-admin-area/`. **Fecha só na release `develop → main`.**
 
 ---
 
@@ -115,6 +115,7 @@
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 1.12 | Out 2026 | **Área admin entregue (US11, v0.15)** — casca admin com sidebar escura + topbar/breadcrumb, dashboard `/admin` (reusa `AdminMetrics` via partial extraído) e link "Admin" só para admins; recolhimento CSS-only (zero JS), sem gem/migration. Cobertura 255 → **275 exemplos**. US11 → 🟣 `Review`; fecha só na release `develop → main`. Ciclo P2 fechado |
 | 1.11 | Out 2026 | **Sincronização pós-release v0.14 + abertura da US11** — US10 vira ✅ (publicada em `main`, PR #57, #33 fechada) e o cabeçalho/ordem da sprint deixam de dizer "aguardando release". **US11 (área admin, 13 SP) entra como próxima entrega (v0.15):** casca admin inspirada no AdminLTE 3, reimplementada em Bootstrap 5 + ERB + CSS puro. Fonte PRD v0.14 |
 | 1.10 | Out 2026 | **Métricas admin entregues (US10 — US1, #33, v0.14)** — `AdminMetrics` (PORO) com três números em `/usuarios`: usuários cadastrados, contatos totais e série de 8 semanas naturais (segunda→domingo, semana corrente parcial), agrupada em SQL e com zeros preenchidos em Ruby (série sempre com 8 pontos); só contagens agregadas sob `require_admin`, sem gem nova nem migration. Cobertura 230 → **255 exemplos**. Spec Kit em `specs/001-admin-metrics/`. US10 → 🟣 `Review`; ainda fecha só na release `develop → main`. Fonte PRD v0.14 |
 | 1.9 | Out 2026 | **Sincronização pós-release v0.13** — PR #55 (`develop → main`, 11/10/2026) promoveu v0.12 (US07, #30) e v0.13 (US09, #32); #30, #32 e #49 fechadas. US07 e US09 viram ✅ nas tabelas; AC transversal corrigido de 161 → **230 exemplos**; avaliação (specs, docs, risco de contas falsas) e status da sprint atualizados para pós-v0.13; cabeçalho corrigido de 1.7 → 1.9 (o bump 1.8 tinha ficado só no histórico). Fonte PRD v0.13 |
