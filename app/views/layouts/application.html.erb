@@ -14,14 +14,7 @@
     <%= render 'layouts/header' if user_signed_in? %>
 
     <main class="min-vh-100<%= ' py-5' unless user_signed_in? %>">
-      <% flash.each do |message_type, message| %>
-        <div class="container mt-3">
-          <div class="alert alert-<%= message_type == 'alert' ? 'danger' : message_type %> alert-dismissible fade show" role="alert">
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            <%= message %>
-          </div>
-        </div>
-      <% end %>
+      <%= render 'layouts/flash' %>
 
       <%= yield %>
     </main>

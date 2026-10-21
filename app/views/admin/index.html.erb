@@ -1,0 +1,12 @@
+<% content_for(:breadcrumb, admin_breadcrumb(["Início", root_path], ["Admin", admin_path], "Visão Geral")) %>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>Visão Geral</h1>
+    <%= link_to usuarios_path, class: "btn btn-outline-primary" do %>
+      <i class="bi bi-people me-1"></i>Usuários
+    <% end %>
+  </div>
+
+  <%= render 'admin/admin_metrics', metrics: @metrics %>
+</div>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Agenda!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag 'application', media: 'all', 'data-turbo-track': 'reload' %>
+    <%= javascript_include_tag 'application', 'data-turbo-track': 'reload' %>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </head>
+  <body>
+    <input type="checkbox" id="admin-sidebar-toggle" class="admin-sidebar-toggle" hidden>
+
+    <div class="admin-wrapper">
+      <%= render 'layouts/admin_sidebar' %>
+
+      <div class="admin-main">
+        <%= render 'layouts/admin_topbar' %>
+
+        <main class="admin-content">
+          <%= render 'layouts/flash' %>
+          <%= yield %>
+        </main>
+      </div>
+    </div>
+
+    <%= render 'layouts/footer' if user_signed_in? %>
+  </body>
+</html>

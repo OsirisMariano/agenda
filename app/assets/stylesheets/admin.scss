@@ -1,0 +1,139 @@
+$admin-sidebar-width: 240px;
+$admin-sidebar-collapsed-width: 0px;
+$admin-sidebar-bg: #1f2937;
+$admin-sidebar-bg-hover: #111827;
+$admin-sidebar-fg: #cbd5e1;
+$admin-topbar-bg: #ffffff;
+$admin-topbar-height: 56px;
+
+.admin-wrapper {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+  background-color: #f1f3f5;
+}
+
+.admin-sidebar {
+  flex: 0 0 $admin-sidebar-width;
+  width: $admin-sidebar-width;
+  background-color: $admin-sidebar-bg;
+  color: $admin-sidebar-fg;
+  transition: margin-left 0.2s ease-in-out;
+  overflow: hidden;
+}
+
+.admin-sidebar-brand {
+  height: $admin-topbar-height;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-brand-link {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &:hover {
+    color: #ffffff;
+  }
+}
+
+.admin-brand-icon {
+  font-size: 1.25rem;
+}
+
+.admin-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0;
+}
+
+.admin-nav-item {
+  margin: 0;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  color: $admin-sidebar-fg;
+  text-decoration: none;
+
+  &:hover {
+    background-color: $admin-sidebar-bg-hover;
+    color: #ffffff;
+  }
+
+  &.active {
+    background-color: $admin-sidebar-bg-hover;
+    color: #ffffff;
+    border-left: 3px solid #0d6efd;
+  }
+}
+
+.admin-nav-icon {
+  font-size: 1rem;
+  width: 1.1rem;
+  text-align: center;
+}
+
+.admin-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topbar {
+  height: $admin-topbar-height;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1rem;
+  background-color: $admin-topbar-bg;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.admin-sidebar-toggle-btn {
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  margin: 0;
+  color: #495057;
+}
+
+.admin-topbar-breadcrumb {
+  flex: 1 1 auto;
+}
+
+.admin-topbar-user {
+  a {
+    color: #495057;
+    text-decoration: none;
+  }
+}
+
+.admin-content {
+  flex: 1 1 auto;
+  padding: 1.5rem 0;
+}
+
+.admin-sidebar-toggle:checked ~ .admin-wrapper .admin-sidebar {
+  margin-left: -$admin-sidebar-width;
+}
+
+@media (max-width: 767.98px) {
+  .admin-sidebar {
+    margin-left: -$admin-sidebar-width;
+  }
+
+  .admin-sidebar-toggle:checked ~ .admin-wrapper .admin-sidebar {
+    margin-left: 0;
+  }
+}

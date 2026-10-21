@@ -1,3 +1,5 @@
+<% content_for(:breadcrumb, admin_breadcrumb(["Início", root_path], ["Admin", admin_path], "Usuários")) %>
+
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="mb-0"><i class="bi bi-person-gear me-2"></i>Usuários</h1>
@@ -6,44 +8,7 @@
     </span>
   </div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted text-uppercase small">Usuários cadastrados</div>
-          <div class="display-6 fw-semibold"><%= @metrics.users_count %></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-muted text-uppercase small">Contatos totais</div>
-          <div class="display-6 fw-semibold"><%= @metrics.contacts_count %></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-1">
-        <div class="text-muted text-uppercase small">Contatos por semana</div>
-        <span class="badge bg-light text-secondary">8 semanas</span>
-      </div>
-      <div class="d-flex align-items-end gap-2" style="height: 120px;">
-        <% max_total = @metrics.max_weekly_total %>
-        <% @metrics.weekly_contacts.each do |week| %>
-          <% height = max_total.zero? ? 0 : (week[:total] * 100 / max_total) %>
-          <div class="flex-fill text-center d-flex flex-column justify-content-end h-100">
-            <div class="small fw-semibold"><%= week[:total] %></div>
-            <div class="bg-primary rounded-top" style="height: <%= height %>%;"></div>
-            <div class="text-muted" style="font-size: 0.7rem;"><%= week[:label] %></div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-  </div>
+  <%= render 'admin/admin_metrics', metrics: @metrics %>
 
   <div class="card shadow-sm">
     <div class="table-responsive">
