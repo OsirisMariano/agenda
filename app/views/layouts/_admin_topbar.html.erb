@@ -1,0 +1,24 @@
+<header class="admin-topbar">
+  <label for="admin-sidebar-toggle" class="admin-sidebar-toggle-btn" aria-label="Alternar navegação">
+    <i class="bi bi-list"></i>
+  </label>
+
+  <div class="admin-topbar-breadcrumb">
+    <%= yield(:breadcrumb) if content_for?(:breadcrumb) %>
+  </div>
+
+  <div class="dropdown admin-topbar-user">
+    <a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+      <i class="bi bi-person-circle"></i> <%= current_user.name %>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li>
+        <%= link_to "Contatos", contacts_path, class: "dropdown-item" %>
+      </li>
+      <li><hr class="dropdown-divider"></li>
+      <li>
+        <%= link_to "Sair", sair_path, class: "dropdown-item text-danger" %>
+      </li>
+    </ul>
+  </div>
+</header>

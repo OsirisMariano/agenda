@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   delete "sair", to: "sessions#destroy"
   get "cadastro", to: "users#new", as: "cadastro"
   get "usuarios", to: "users#index"
+  get "admin", to: "admin#index", as: "admin"
 
   get "recuperar-senha", to: "password_resets#new", as: "recuperar_senha"
   post "recuperar-senha", to: "password_resets#create"

@@ -1,0 +1,14 @@
+<nav class="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <%= link_to root_path, class: "admin-brand-link" do %>
+      <i class="bi bi-calendar-check admin-brand-icon"></i>
+      <span class="admin-brand-text">Agenda</span>
+    <% end %>
+  </div>
+
+  <ul class="admin-nav">
+    <% admin_nav_items.each do |item| %>
+      <%= admin_nav_item(item[:label], item[:path], icon: item[:icon]) %>
+    <% end %>
+  </ul>
+</nav>

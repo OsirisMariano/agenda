@@ -35,6 +35,16 @@ RSpec.describe("Área admin", type: :feature) do
       end
     end
 
+    it "exibe o breadcrumb da página no topbar" do
+      visit "/usuarios"
+
+      within(".admin-topbar") do
+        expect(page).to(have_selector(".breadcrumb"))
+        expect(page).to(have_content("Admin"))
+        expect(page).to(have_content("Usuários"))
+      end
+    end
+
     it "mantém o rodapé público na casca" do
       visit "/usuarios"
 

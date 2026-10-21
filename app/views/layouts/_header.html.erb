@@ -15,6 +15,11 @@
           <li class="nav-item">
             <%= link_to 'Cadastro', new_contact_path, class: 'nav-link' %>
           </li>
+          <% if current_user.admin? %>
+            <li class="nav-item">
+              <%= link_to 'Admin', admin_path, class: 'nav-link' %>
+            </li>
+          <% end %>
         <% end %>
         <li class="nav-item">
           <%= link_to 'Sobre', sobre_path, class: 'nav-link' %>
