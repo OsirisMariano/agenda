@@ -4,7 +4,7 @@
 
 **Versão:** 0.14  
 **Data:** Outubro 2026  
-**Status:** v0.14 (US10) em `develop` aguardando promoção a `main`. Publicadas: v0.12 (US07) e v0.13 (US09) em `main` (PR #55, 11/10/2026)
+**Status:** v0.14 (US10) publicada em `main` (PR #57, 20/10/2026; issue #33 fechada). Próxima entrega: **US11 — área admin** (v0.15)
 
 ---
 
