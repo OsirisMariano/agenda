@@ -1,6 +1,6 @@
 # Backlog do Produto — Agenda
 
-**Versão:** 1.12
+**Versão:** 1.13
 **Data:** Outubro 2026
 **Fonte:** PRD v0.15 + Avaliação do Product Owner
 **Ferramenta de gestão:** GitHub Projects (Board #65 — "Agenda — Backlog") + milestone "P2 — Roadmap"
@@ -13,7 +13,7 @@
 |----------|------|------------|
 | **Valor entregue** | ★★★★☆ | Problema central resolvido: CRUD privado de contatos com busca/ordenação/paginação |
 | **Qualidade técnica** | ★★★★☆ | 275 specs verdes, isolamento por usuário correto, strong params, Docker ok |
-| **Documentação** | ★★★★★ | PRD v0.13 alinhado ao código, histórico de versões disciplinado |
+| **Documentação** | ★★★★★ | PRD v0.15 alinhado ao código, histórico de versões disciplinado |
 | **Segurança** | ★★★★☆ | Recuperação de senha, rate limit e confirmação de e-mail (US09, v0.13) em place; CI ativo. Risco de EOL da stack aceito e documentado (PRD §8.5) |
 | **Infra/CI** | ★★★★☆ | GitHub Actions (rspec + rubocop) verde nos PRs desde v0.4 |
 | **Débito técnico** | Baixo | Legado saneado em v0.8 (sem resíduo Devise, sem mocks de UI) |
@@ -24,7 +24,7 @@
 
 > **Atualização (set/2026, v1.6):** **Ciclo P1 encerrado e P2 aberto.** A release **v0.10** foi promovida (PR #48, 28/09, `Closes #29`) — a US06 está **100% entregue** e não há mais item de P0 ou P1 pendente. A auditoria entre este arquivo e o board #65 revelou quatro divergências, todas corrigidas no **CHORE-05 (#49)**:
 >
-> 1. **A stack foi congelada** por decisão do PO, conforme o `README.md`. O upgrade de Rails saiu da sprint: a US08 (#31) foi **retirada da milestone** e mantida aberta em `Backlog`, sem data prevista.
+> 1. **A stack foi congelada** por decisão do PO, conforme o `README.md`. O upgrade de Rails saiu da sprint: a US08 (#31) foi **retirada da milestone** e **fechada em 21/10/2026**, com a decisão e o gatilho de repriorização preservados no corpo da issue (PRD §8.5).
 > 2. **A US08 estava mal formulada.** Pedia 7.0 → 7.1/7.2, mas **ambos os alvos já estão EOL** (7.1 em 05/10/2025, 7.2 em 09/08/2026). Se um dia a decisão mudar, o alvo passa a ser **8.1** (segurança até 10/10/2027) e a estimativa sobe de 13 para ~18 SP.
 > 3. **A US07 não pode usar `pg_search`.** A gem 2.4.0 exige `activerecord >= 8.0`; a 2.3.7 é a última compatível com Rails 7.0. Pinar uma versão congelada contradiz a decisão. A busca vai de `unaccent` + `pg_trgm` — **zero gem nova**.
 > 4. **A US10 já tinha a decisão de papel pronta.** A flag booleana `admin` está em produção (`db/schema.rb:36`, `require_admin`, `/usuarios`) — a promessa do README já está cumprida. A US virou *adicionar métricas a uma área que existe*, sem CanCan/Pundit/gem.
@@ -55,14 +55,14 @@
 |---|-----------|-------|----|--------|
 | US04 | Como usuário, quero campos extras no contato (**e-mail, endereço, notas**) | Produto | 5 | ✅ v0.7 (#27/#42) — promovido em `main` via PR #43 |
 | US05 | Como dev, quero **sanear o legado**: remover `devise.en.yml`, decidir destino do footer (newsletter/social mock) e rodar RuboCop nas migrations antigas | Dívida | 3 | ✅ v0.8 (#28) — `devise.en.yml` removido, footer saneado; lint das migrations coberto pela exclusão `Rails/BulkChangeTable` |
-| US06 | Como usuário, quero **exportar/importar contatos em CSV** para não ficar preso à plataforma | Produto | 8 | ✅ **v0.9 + v0.10 (#29, PR #46/#47 + release #48)** — export e import CSV com round-trip, relatório linha+campo, RN01–RN04 e injeção de fórmula neutralizada. Ciclo P1 **encerrado**. vCard fora do v1 (métrica de uso: #50) |
+| US06 | Como usuário, quero **exportar/importar contatos em CSV** para não ficar preso à plataforma | Produto | 8 | ✅ **v0.9 + v0.10 (#29, PR #46/#47 + release #48)** — export e import CSV com round-trip, relatório linha+campo, RN01–RN04 e injeção de fórmula neutralizada. Ciclo P1 **encerrado**. vCard **permanece fora do backlog por decisão** — métrica de uso medida e **#50 fechada** em 21/10/2026 (3 exports / 0 imports, sem deploy público) |
 
 ### 🟢 P2 — Desejável (ciclo em curso)
 
 | # | User Story | Épico | SP | Status |
 |---|-----------|-------|----|--------|
 | US07 | Como usuário, quero busca que tolera **acentos e erros de digitação** | Produto | 5 | ✅ **v0.12 (#30, PR #55)** — `unaccent` + `pg_trgm`, zero gem nova, sem índice de expressão (`unaccent()` é `STABLE` no PG 12.3) |
-| US08 | Como dev, quero **upgrade Rails 7.0 → 8.1** | Infra | 13 | 🔒 **fora do ciclo (#31)** — stack congelada por decisão (PRD §8.5). Sem data prevista; se repriorizado, sobe para P0 |
+| US08 | Como dev, quero **upgrade Rails 7.0 → 8.1** | Infra | 13 | 🔒 **fora do ciclo (#31, fechada em 21/10/2026)** — stack congelada por decisão (PRD §8.5). Sem data prevista; **reabre** se o projeto ganhar usuário externo real ou se uma dependência nova exigir Rails > 7.0 — aí sobe para P0 |
 | US09 | Como usuário, quero confirmação de e-mail no cadastro (evita contas falsas) | Segurança | 5 | ✅ **v0.13 (#32, PR #55)** — token hasheado, expiração 2h, login bloqueado até confirmar |
 | US10 | Como admin, quero métricas básicas na área admin **que já existe** | Admin | 8 | ✅ **v0.14 (#33, PR #57)** — três números em `/usuarios` — `AdminMetrics` (PORO), série de 8 semanas com zeros preenchidos, só contagens sob `require_admin`, sem gem nova. Publicada em `main` 20/10/2026 |
 | US11 | Como admin, quero uma **área admin completa** com navegação (layout sidebar escura) | Admin | 13 | 🟣 **`Review`** — v0.15. Casca admin (sidebar dark + topbar + breadcrumb) + dashboard `/admin` + link "Admin" na navbar (só admin). **Inspirado** no AdminLTE 3, reimplementado em Bootstrap 5 + ERB + CSS puro (zero jQuery/BS4/JS novo, collapse CSS-only). Partial de métricas extraído. **275 exemplos** (de 255). Fecha só na release `develop → main` |
@@ -72,7 +72,7 @@
 > **Mudanças de escopo aprovadas no CHORE-05:**
 > - **US07** deixa de usar `pg_search`. A gem 2.4.0 exige `activerecord >= 8.0`; a 2.3.7 é a última compatível com Rails 7.0 — pinar uma versão congelada contradiz a decisão de stack. Vai de `unaccent` + `pg_trgm`, que já vêm no `postgresql-contrib` da imagem `postgres:12.3`.
 > - **US10** não cria área admin nem sistema de papéis. A flag booleana `admin` já está em produção desde v0.x (`db/schema.rb:36`, `require_admin`, rota `/usuarios`) — a promessa do `README.md` já está cumprida. A US virou *adicionar três números a uma tela que já existe*.
-> - **US08** saiu da milestone e do ciclo. Ver a decisão completa no corpo da issue #31.
+> - **US08** saiu da milestone e do ciclo. A decisão completa está no corpo da issue #31 (**fechada em 21/10/2026**, com o gatilho de reabertura preservado) e no §8.5 do PRD.
 
 ---
 
@@ -91,7 +91,7 @@
 - **Campos customizados:** `Épico` (Segurança/Infra/Produto/Dívida/Admin), `SP` (número), `Prioridade` (P0/P1/P2)
 - **Labels:** `P0` (vermelho), `P1` (amarelo), `P2` (verde)
 - **Itens:** apenas **issues**. PRs não entram como item — o rastreio é feito pela coluna "Linked pull requests" (o PR #42 foi removido por ser o único PR no board, enquanto os #46/#47/#48 nunca entraram)
-- **Milestone:** "P2 — Roadmap" agrupa a sprint em curso (18 SP, 3 issues). Itens fora do ciclo ficam **sem milestone** — é assim que a US08 (#31) representa "atrasado sem data prevista"
+- **Milestone:** "P2 — Roadmap" agrupa a sprint em curso (18 SP, 3 issues). Itens fora do ciclo ficam **sem milestone** — é assim que a US08 (#31, fechada em 21/10/2026) representa "atrasado sem data prevista": fechada, mas com o gatilho de reabertura preservado no corpo da issue
 - **Regra de fechamento:** a issue só fecha na PR de release `develop → main` com `Closes #X` no corpo — merge em `develop` não fecha issue neste repo
 
 ---
@@ -106,7 +106,7 @@
    - **Dívida deixada de propósito:** `POST /reenviar-confirmacao` sem rate limit. A receita já existe na US03 (rack-attack, 5/IP/min no login); o natural é 3/IP/min aqui. Saiu do escopo por simplicidade, não por ser inofensivo — ver §12.4 do PRD.
 3. **US10 — métricas (v0.14, entregue):** três números na tela de `/usuarios` que já existe. Reaproveitou o `require_admin` atual; nenhuma gem de papel nem de gráfico. `AdminMetrics` (`app/services/admin_metrics.rb`), série de 8 semanas naturais (segunda→domingo), zeros preenchidos em Ruby, barras em CSS inline, **255 exemplos** (de 230). Spec Kit em `specs/001-admin-metrics/`. **Publicada em `main` (PR #57, 20/10/2026); #33 fechada.**
 4. **CHORE-05 (#49) —** ✅ **fechada na PR de release (PR #55)** junto com #30 e #32.
-5. **Métrica de uso do export/import (#50):** decidir o vCard com dado na mão, antes ou durante o ciclo.
+5. **Métrica de uso do export/import (#50 — fechada em 21/10/2026):** ✅ **decidido com o dado na mão — o vCard permanece fora do backlog.** A medição saiu pela instrumentação mais barata possível (o `log/development.log` que o Rails já grava, **zero código novo**): **3 `GET /contacts/exportar` e 0 `POST /contacts/importar`** em 2 meses de log — e os 3 exports são **de 26-27/09, antes do import existir** (v0.10 saiu em 28/09): foram as fixtures do próprio dev. Com 2 contas no banco e **nenhum deploy público** no repositório, esse número é fumaça de teste, não demanda. O vCard entregaria o **mesmo valor de portabilidade em outro formato**, ao custo de um segundo exportador + importador + round-trip + sanitização de fórmula — para demanda observada zero. Reabre se o projeto ganhar usuário externo real.
 6. **US11 — área admin (v0.15, entregue em `Review`):** casca admin com sidebar escura + topbar + breadcrumb, dashboard `/admin` e link "Admin" na navbar (só para admins). **Inspirada** no AdminLTE 3, reimplementada no stack atual (Bootstrap 5 + ERB + CSS puro) — zero jQuery, zero BS4, zero JS novo (collapse CSS-only), sem lib de gráfico. Partial de métricas extraído e reusado em `/admin` e `/usuarios`. **275 exemplos** (de 255). Spec Kit em `specs/002-admin-area/`. **Fecha só na release `develop → main`.**
 
 ---
@@ -115,6 +115,7 @@
 
 | Versão | Data | Descrição |
 |--------|------|-----------|
+| 1.13 | Out 2026 | **Encerramento de #31 e #50 — mudança só de docs, sem arquivo de runtime.** As duas issues abertas que representavam "decidido, sem data" foram **fechadas com a decisão registrada no corpo**, virando lápides pesquisáveis em vez de trabalho pendente ambíguo. **#31 (upgrade Rails 7.0 → 8.1):** fechada com o gatilho de reabertura preservado — reabrir se o projeto ganhar usuário externo real ou se uma dependência exigir Rails > 7.0 (aí sobe para P0); corrigido também o User Story, que ainda prometia 7.1/7.2 (ambos EOL) enquanto o título dizia 8.1. **#50 (métrica de uso do export/import):** fechada cumprindo o próprio DoD sem escrever código — a menor instrumentação possível era o `log/development.log` que o Rails já grava; medido **3 exports / 0 imports**, os exports **de antes do import existir**, 2 contas e **nenhum deploy público** → **vCard permanece fora do backlog**. Docs: PRD §8.5 e §12.4 ajustados e a linha v0.15 do histórico do PRD completada; aqui, §1, §2 (US06/US08), §4 e §5 item 5 atualizados. **Tabela de histórico não reescrita** — as entradas antigas continuam contando o que aconteceu na época. PR #60 |
 | 1.12 | Out 2026 | **Área admin entregue (US11, v0.15)** — casca admin com sidebar escura + topbar/breadcrumb, dashboard `/admin` (reusa `AdminMetrics` via partial extraído) e link "Admin" só para admins; recolhimento CSS-only (zero JS), sem gem/migration. Cobertura 255 → **275 exemplos**. US11 → 🟣 `Review`; fecha só na release `develop → main`. Ciclo P2 fechado |
 | 1.11 | Out 2026 | **Sincronização pós-release v0.14 + abertura da US11** — US10 vira ✅ (publicada em `main`, PR #57, #33 fechada) e o cabeçalho/ordem da sprint deixam de dizer "aguardando release". **US11 (área admin, 13 SP) entra como próxima entrega (v0.15):** casca admin inspirada no AdminLTE 3, reimplementada em Bootstrap 5 + ERB + CSS puro. Fonte PRD v0.14 |
 | 1.10 | Out 2026 | **Métricas admin entregues (US10 — US1, #33, v0.14)** — `AdminMetrics` (PORO) com três números em `/usuarios`: usuários cadastrados, contatos totais e série de 8 semanas naturais (segunda→domingo, semana corrente parcial), agrupada em SQL e com zeros preenchidos em Ruby (série sempre com 8 pontos); só contagens agregadas sob `require_admin`, sem gem nova nem migration. Cobertura 230 → **255 exemplos**. Spec Kit em `specs/001-admin-metrics/`. US10 → 🟣 `Review`; ainda fecha só na release `develop → main`. Fonte PRD v0.14 |
